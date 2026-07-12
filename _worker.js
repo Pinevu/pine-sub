@@ -505,6 +505,34 @@ window.addEventListener('DOMContentLoaded',()=>{
 }
 
 // ── 订阅格式生成 ──
+function genV2ray(lines) {
+  let uris = [];
+  lines.forEach(l => {
+    if (!l.includes('=')) return;
+    const eq = l.indexOf('=');
+    const name = l.substring(0, eq).trim();
+    const cfg = l.substring(eq + 1).trim();
+    const p = cfg.split(',').map(s=>s.trim());
+    if (p[0] === 'snell') {
+      let psk='';
+      p.forEach(x => { if(x.startsWith('psk=')) psk=x.slice(4); });
+      uris.push('snell://' + encodeURIComponent(psk) + '@' + p[1] + ':' + p[2] + '#' + encodeURIComponent(name));
+    } else if (p[0] === 'ss') {
+      let mp='', pw='';
+      p.forEach(x => { if(x.startsWith('encrypt-method=')) mp=x.slice(15); if(x.startsWith('password=')) pw=x.slice(9); });
+      const raw = mp + ':' + pw;
+      const b64 = btoa(raw);
+      uris.push('ss://' + b64 + '@' + p[1] + ':' + p[2] + '#' + encodeURIComponent(name));
+    } else if (p[0] === 'trojan') {
+      let pw='';
+      p.forEach(x => { if(x.startsWith('password=')) pw=x.slice(9); });
+      uris.push('trojan://' + encodeURIComponent(pw) + '@' + p[1] + ':' + p[2] + '#' + encodeURIComponent(name));
+    }
+  });
+  const text = uris.join('\n');
+  try { return btoa(text); } catch(e) { return text; }
+}
+
 function genClash(lines) {
   let y = 'port: 7890\nsocks-port: 7891\nmode: Rule\nlog-level: info\nproxies:\n';
   lines.forEach(l => {
@@ -573,7 +601,7 @@ async function handleSub(req, env, token, format) {
   let body='', ct='text/plain;charset=utf-8';
   switch(format) {
     case 'surge': body = sel.join('\n')+'\n'; break;
-    case 'v2ray': body = sel.join('\n')+'\n'; break;
+    case 'v2ray': body = genV2ray(sel); break;
     case 'clash': body = genClash(sel); ct = 'text/yaml;charset=utf-8'; break;
     case 'singbox': body = genSingbox(sel); ct = 'application/json;charset=utf-8'; break;
     default: body = sel.join('\n')+'\n';
