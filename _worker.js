@@ -91,7 +91,8 @@ textarea{resize:vertical;min-height:76px}
 .link-list{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
 .link-row{display:flex;align-items:center;background:rgba(0,122,255,.04);padding:6px 10px;border-radius:8px;gap:8px}
 .link-label{font-size:11px;font-weight:600;color:var(--blue);width:48px;flex-shrink:0}
-.link-url{font-family:var(--mono);font-size:11px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.link-url{font-family:var(--mono);font-size:11px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;cursor:pointer}
+.link-url:active{opacity:.6}
 .sub-collapse{display:none;margin-top:10px;border-top:1px dashed var(--border);padding-top:12px;animation:fadeIn .2s ease}
 .sub-collapse.open{display:block}
 .sub-tools{display:flex;gap:8px;margin-top:10px}
@@ -105,12 +106,6 @@ textarea{resize:vertical;min-height:76px}
 .modal-body{overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
 .modal-actions{display:flex;gap:10px;margin-top:16px}
 .modal-actions .btn{flex:1;justify-content:center}
-/* 测速结果 */
-.test-progress{margin:12px 0;display:none;background:var(--bg);border-radius:10px;overflow:hidden;height:8px}
-.test-bar{height:100%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:10px;transition:width .4s ease;width:0}
-.test-item{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:13px;border-bottom:1px solid var(--border)}
-.test-item:last-child{border:none}
-.test-item .name{flex:1;font-weight:500}
 /* toast */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--card);color:var(--text);padding:10px 22px;border-radius:12px;font-size:13px;font-weight:500;box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:9999;opacity:0;pointer-events:none;border:1px solid var(--border);transition:all .35s ease;white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -161,11 +156,13 @@ textarea{resize:vertical;min-height:76px}
       <div class="card-title">
         <span>🗂️ 节点库</span>
         <div style="display:flex;gap:8px;align-items:center">
-          <span class="badge badge-blue" id="nodeCount">${nodeLines.length} 个</span>
+                    <span class="badge badge-blue" id="nodeCount">${nodeLines.length} 个</span>
+          <span class="badge badge-orange" id="nodeProtoCount" style="margin-left:4px;font-size:10px"></span>
           <button class="btn btn-sm btn-gray" onclick="toggleNodeList()" id="toggleNodesBtn">展开</button>
         </div>
       </div>
       <div class="hint">勾选节点可分配至订阅通道</div>
+      <input id="nodeFilter" placeholder="🔍 搜索节点名称..." style="margin-bottom:10px;font-family:var(--font)" oninput="renderNodeList()">
       <div id="nodeList"></div>
     </div>
   </div>
@@ -183,13 +180,6 @@ textarea{resize:vertical;min-height:76px}
 
   <!-- ── Tab: 工具 ── -->
   <div class="tab-content" id="tab-tools">
-    <div class="card">
-      <div class="card-title">⚡ 节点延迟测试</div>
-      <div class="hint">通过 Google 204 测速节点，反映真实代理延迟</div>
-      <button class="btn btn-block btn-orange" onclick="startSpeedTest()" id="speedTestBtn">开始测速</button>
-      <div class="test-progress" id="testProgress"><div class="test-bar" id="testBar"></div></div>
-      <div id="testResults" style="margin-top:12px"></div>
-    </div>
     <div class="card">
       <div class="card-title">📤 导出</div>
       <div class="hint">导出节点和订阅配置</div>
@@ -334,9 +324,16 @@ function toggleNodeList(){
 function renderNodeList(){
   const el=$('nodeList'),raw=$('rawNodes')
   const lines=raw.value.split('\\n').filter(l=>l.trim()&&!l.trim().startsWith('#'))
-  $('nodeCount').textContent=lines.length+' 个'
-  if(!lines.length){el.innerHTML='<div class="empty">暂无节点</div>';return}
-  el.innerHTML=lines.map((l,i)=>{
+  // 搜索过滤
+  const q=($('nodeFilter').value||'').trim().toLowerCase()
+  const filtered=q?lines.filter(l=>l.split('=')[0].trim().toLowerCase().includes(q)):lines
+  $('nodeCount').textContent=filtered.length+'/'+lines.length+' 个'
+  // 协议统计
+  const ss=lines.filter(l=>{const p=l.split('=')[1];return p&&(p.trim().toLowerCase().startsWith('ss,')||p.trim().toLowerCase().startsWith('shadowsocks,'))}).length
+  const sn=lines.length-ss
+  $('nodeProtoCount').textContent=sn+'Snell '+ss+'SS'
+  if(!filtered.length){el.innerHTML=lines.length?'<div class="empty">无匹配节点</div>':'<div class="empty">暂无节点</div>';return}
+  el.innerHTML=filtered.map((l,i)=>{
     const name=l.split('=')[0].trim(),proto=getProto(l)
     return \`<div class="node-item"><div class="info"><div class="name" style="word-break:break-all">\${name}</div><div class="meta"><span class="badge badge-orange" style="flex-shrink:0">\${proto}</span><span class="latency lat-0" id="lat-\${i}">-- ms</span></div></div><div class="actions"><button class="btn btn-sm btn-gray" onclick="editNode(\${i})">编辑</button><button class="btn btn-sm btn-red" onclick="deleteNode(\${i})">删除</button></div></div>\`
   }).join('')
@@ -393,15 +390,15 @@ function renderSubs(){
       <input class="name-input" style="width:100%;word-break:break-all" value="\${sub.name}" onchange="updateSub('\${sub.id}','name',this.value)" placeholder="名称">
       <div class="sub-meta">\${tag} · ID: \${sub.token.slice(0,8)}...</div>
       <div class="link-list">
-        <div class="link-row"><span class="link-label" style="flex-shrink:0">通用</span><span class="link-url">\${u}</span><button class="btn btn-sm btn-gray" style="flex-shrink:0" onclick="copy('\${u}')">复制</button></div>
+        <div class="link-row"><span class="link-label" style="flex-shrink:0">通用</span><span class="link-url" onclick="copy('\${u}')">\${u}</span><button class="btn btn-sm btn-gray" style="flex-shrink:0" onclick="copy('\${u}')">复制</button></div>
       </div>
       <button class="btn btn-ghost" style="width:100%;font-size:13px" onclick="toggleSub('\${sub.id}')">\${tgl}</button>
       <div class="sub-collapse \${cls}" id="sc-\${sub.id}">
         <div class="link-list">
-          <div class="link-row"><span class="link-label">V2ray</span><span class="link-url">\${v}</span><button class="btn btn-sm btn-gray" onclick="copy('\${v}')">复制</button></div>
-          <div class="link-row"><span class="link-label">Surge</span><span class="link-url">\${s}</span><button class="btn btn-sm btn-gray" onclick="copy('\${s}')">复制</button></div>
-          <div class="link-row"><span class="link-label">Clash</span><span class="link-url">\${cl}</span><button class="btn btn-sm btn-gray" onclick="copy('\${cl}')">复制</button></div>
-          <div class="link-row"><span class="link-label">Sing-box</span><span class="link-url">\${sb}</span><button class="btn btn-sm btn-gray" onclick="copy('\${sb}')">复制</button></div>
+          <div class="link-row"><span class="link-label">V2ray</span><span class="link-url" onclick="copy('\${v}')">\${v}</span><button class="btn btn-sm btn-gray" onclick="copy('\${v}')">复制</button></div>
+          <div class="link-row"><span class="link-label">Surge</span><span class="link-url" onclick="copy('\${s}')">\${s}</span><button class="btn btn-sm btn-gray" onclick="copy('\${s}')">复制</button></div>
+          <div class="link-row"><span class="link-label">Clash</span><span class="link-url" onclick="copy('\${cl}')">\${cl}</span><button class="btn btn-sm btn-gray" onclick="copy('\${cl}')">复制</button></div>
+          <div class="link-row"><span class="link-label">Sing-box</span><span class="link-url" onclick="copy('\${sb}')">\${sb}</span><button class="btn btn-sm btn-gray" onclick="copy('\${sb}')">复制</button></div>
         </div>
         <div class="sub-tools">
           <button class="btn btn-sm btn-gray" onclick="triggerSelect('\${sub.id}')">节点授权</button>
@@ -435,7 +432,7 @@ function triggerSelect(id){
   editingSubId=id;const sub=subs.find(s=>s.id===id),raw=$('rawNodes')
   const lines=raw.value.split('\\n').filter(l=>l.trim()&&!l.trim().startsWith('#'))
   if(!lines.length){toast('节点库为空');return}
-  let html='<div style="display:flex;flex-direction:column;gap:8px">'
+  let html='<div style="margin-bottom:10px;display:flex;gap:8px"><button class="btn btn-sm btn-gray" onclick="document.querySelectorAll(\'.ncb\').forEach(c=>c.checked=true)">全选</button><button class="btn btn-sm btn-gray" onclick="document.querySelectorAll(\'.ncb\').forEach(c=>c.checked=false)">清空</button></div><div style="display:flex;flex-direction:column;gap:8px">'
   lines.forEach(l=>{
     const n=l.split('=')[0].trim(),p=getProto(l),ck=sub.type==='all'||(sub.selected||[]).includes(n)
     html+='<label style="display:flex;align-items:center;gap:8px;padding:10px;background:var(--bg);border-radius:8px;cursor:pointer">'
@@ -452,32 +449,6 @@ function saveSubSelection(){
   const sub=subs.find(s=>s.id===editingSubId)
   sub.type=cbs.length===sel.length?'all':'select';sub.selected=sel
   renderSubs();syncSubs();closeModal('subSelectModal')
-}
-
-// ── 测速 ──
-async function startSpeedTest(){
-  const btn=$('speedTestBtn'),prog=$('testProgress'),bar=$('testBar'),res=$('testResults')
-  btn.disabled=true;btn.textContent='测试中...';prog.style.display='block'
-  const raw=$('rawNodes'),lines=raw.value.split('\\n').filter(l=>l.trim()&&!l.trim().startsWith('#'))
-  if(!lines.length){toast('无节点');btn.disabled=false;btn.textContent='开始测速';return}
-  res.innerHTML=lines.map((l,i)=>'<div class="test-item"><span class="name">'+l.split('=')[0].trim()+'</span><span id="tr-'+i+'">测试中...</span></div>').join('')
-  for(let i=0;i<lines.length;i++){
-    const l=lines[i],eq2=l.indexOf('='),cfg2=l.substring(eq2+1).trim(),parts=cfg2.split(',').map(s=>s.trim()),host=parts[1],port=parts[2]
-    const start=Date.now()
-    try{
-      const r=await fetch('http://www.google.com/generate_204',{signal:AbortSignal.timeout(5000)})
-      const ms=Date.now()-start
-      $('tr-'+i).innerHTML=ms<300?'<span class="latency lat-1">'+ms+'ms</span>':ms<800?'<span class="latency lat-2">'+ms+'ms</span>':'<span class="latency lat-3">'+ms+'ms</span>'
-      $('lat-'+i).textContent=ms+'ms'
-      $('lat-'+i).className='latency lat-'+(ms<300?1:ms<800?2:3)
-    }catch(e){
-      $('tr-'+i).innerHTML='<span class="latency lat-3">超时</span>'
-    }
-    bar.style.width=((i+1)/lines.length*100)+'%'
-  }
-  bar.style.width='100%'
-  btn.disabled=false;btn.textContent='重新测速'
-  setTimeout(()=>{prog.style.display='none';bar.style.width='0'},2000)
 }
 
 // ── 导出 ──
