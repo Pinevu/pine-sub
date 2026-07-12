@@ -185,7 +185,7 @@ textarea{resize:vertical;min-height:76px}
   <div class="tab-content" id="tab-tools">
     <div class="card">
       <div class="card-title">⚡ 节点延迟测试</div>
-      <div class="hint">测试节点连通性，显示 HTTP 延迟（测试节点 80/443 端口）</div>
+      <div class="hint">通过 Google 204 测速节点，反映真实代理延迟</div>
       <button class="btn btn-block btn-orange" onclick="startSpeedTest()" id="speedTestBtn">开始测速</button>
       <div class="test-progress" id="testProgress"><div class="test-bar" id="testBar"></div></div>
       <div id="testResults" style="margin-top:12px"></div>
@@ -465,7 +465,7 @@ async function startSpeedTest(){
     const l=lines[i],eq2=l.indexOf('='),cfg2=l.substring(eq2+1).trim(),parts=cfg2.split(',').map(s=>s.trim()),host=parts[1],port=parts[2]
     const start=Date.now()
     try{
-      const r=await fetch('https://'+host,{method:'HEAD',signal:AbortSignal.timeout(5000)})
+      const r=await fetch('http://www.google.com/generate_204',{signal:AbortSignal.timeout(5000)})
       const ms=Date.now()-start
       $('tr-'+i).innerHTML=ms<300?'<span class="latency lat-1">'+ms+'ms</span>':ms<800?'<span class="latency lat-2">'+ms+'ms</span>':'<span class="latency lat-3">'+ms+'ms</span>'
       $('lat-'+i).textContent=ms+'ms'
