@@ -89,7 +89,7 @@ textarea{resize:vertical;min-height:80px}
 .lat-3{background:rgba(255,59,48,.15);color:var(--red)}
 /* 订阅卡片 */
 .sub-card{border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;background:var(--card)}
-.sub-card .name-input{background:transparent;border:none;font-size:17px;font-weight:600;padding:0;font-family:var(--font);color:var(--text);width:100%}
+.sub-card .name-input{background:transparent;border:none;font-size:17px;font-weight:600;padding:0;font-family:var(--font);color:var(--text);width:100%;word-break:break-all}
 .sub-card .name-input:focus{box-shadow:none;border-bottom:1px solid var(--blue);border-radius:0}
 .sub-meta{display:flex;align-items:center;gap:8px;margin:8px 0 14px;font-size:12px;color:var(--sub)}
 .link-list{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
@@ -122,6 +122,12 @@ textarea{resize:vertical;min-height:80px}
 .toast.show{opacity:1}
 /* 空态 */
 .empty{text-align:center;color:var(--sub);padding:24px 0;font-size:13px}
+/* 节点选择弹窗项 */
+.node-select-item{display:flex;align-items:center;gap:8px;padding:10px;background:var(--bg);border-radius:8px;cursor:pointer}
+.node-select-item .ns-name{font-size:14px;font-weight:500;word-break:break-all;overflow-wrap:break-word;hyphens:auto;flex:1;min-width:0;line-height:1.3}
+.modal-body label{display:flex;align-items:center;gap:8px;padding:10px;background:var(--bg);border-radius:8px;cursor:pointer}
+.modal-body label input[type=checkbox]{width:18px;height:18px;margin:0;flex-shrink:0}
+.modal-body label span:first-of-type{font-size:14px;font-weight:500;word-break:break-all;overflow-wrap:break-word;flex:1;min-width:0;line-height:1.3}
 @media(min-width:640px){.app{padding:0 24px 60px}.nav{padding:16px 24px;margin:0 -24px 24px}}
 </style>
 </head>
@@ -325,7 +331,7 @@ function renderNodeList(){
   if(!lines.length){el.innerHTML='<div class="empty">暂无节点</div>';return}
   el.innerHTML=lines.map((l,i)=>{
     const name=l.split('=')[0].trim(),proto=getProto(l)
-    return \`<div class="node-item"><div class="info"><div class="name">\${name}</div><div class="meta"><span class="badge badge-orange">\${proto}</span><span class="latency lat-0" id="lat-\${i}">-- ms</span></div></div><div class="actions"><button class="btn btn-sm btn-gray" onclick="editNode(\${i})">编辑</button><button class="btn btn-sm btn-red" onclick="deleteNode(\${i})">删除</button></div></div>\`
+    return \`<div class="node-item"><div class="info"><div class="name" style="word-break:break-all">\${name}</div><div class="meta"><span class="badge badge-orange" style="flex-shrink:0">\${proto}</span><span class="latency lat-0" id="lat-\${i}">-- ms</span></div></div><div class="actions"><button class="btn btn-sm btn-gray" onclick="editNode(\${i})">编辑</button><button class="btn btn-sm btn-red" onclick="deleteNode(\${i})">删除</button></div></div>\`
   }).join('')
 }
 
@@ -373,14 +379,14 @@ function renderSubs(){
   const c=$('subsListContainer')
   if(!subs.length){c.innerHTML='<div class="empty">暂无订阅通道，点击上方创建</div>';return}
   c.innerHTML=subs.map(sub=>{
-    const tag=sub.type==='all'?'<span class="badge badge-green">全量节点</span>':'<span class="badge badge-orange">限定 '+sub.selected.length+' 个</span>'
+    const tag=sub.type==='all'?'<span class="badge badge-green">全量节点</span>':'<span class="badge badge-orange" style="word-break:keep-all;white-space:nowrap">限定 '+sub.selected.length+' 个</span>'
     const u=baseUrl+'/sub/'+sub.token+'/universal',s=baseUrl+'/sub/'+sub.token+'/surge',v=baseUrl+'/sub/'+sub.token+'/v2ray',cl=baseUrl+'/sub/'+sub.token+'/clash',sb=baseUrl+'/sub/'+sub.token+'/singbox'
     const open=openSubIds.includes(sub.id),cls=open?'open':'',tgl=open?'收起 ▴':'展开 ▾'
     return \`<div class="sub-card">
-      <input class="name-input" value="\${sub.name}" onchange="updateSub('\${sub.id}','name',this.value)" placeholder="名称">
+      <input class="name-input" style="width:100%;word-break:break-all" value="\${sub.name}" onchange="updateSub('\${sub.id}','name',this.value)" placeholder="名称">
       <div class="sub-meta">\${tag} · ID: \${sub.token.slice(0,8)}...</div>
       <div class="link-list">
-        <div class="link-row"><span class="link-label">通用</span><span class="link-url">\${u}</span><button class="btn btn-sm btn-gray" onclick="copy('\${u}')">复制</button></div>
+        <div class="link-row"><span class="link-label" style="flex-shrink:0">通用</span><span class="link-url">\${u}</span><button class="btn btn-sm btn-gray" style="flex-shrink:0" onclick="copy('\${u}')">复制</button></div>
       </div>
       <button class="btn btn-ghost" style="width:100%;font-size:13px" onclick="toggleSub('\${sub.id}')">\${tgl}</button>
       <div class="sub-collapse \${cls}" id="sc-\${sub.id}">
@@ -425,10 +431,10 @@ function triggerSelect(id){
   let html='<div style="display:flex;flex-direction:column;gap:8px">'
   lines.forEach(l=>{
     const n=l.split('=')[0].trim(),p=getProto(l),ck=sub.type==='all'||(sub.selected||[]).includes(n)
-    html+='<label style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--bg);border-radius:8px;cursor:pointer">'
+    html+='<label style="display:flex;align-items:center;gap:8px;padding:10px;background:var(--bg);border-radius:8px;cursor:pointer">'
     +'<input type="checkbox" class="ncb" value="'+n.replace(/"/g,'&quot;')+'" '+(ck?'checked':'')+'>'
-    +'<span style="flex:1;font-size:14px;font-weight:500">'+n+'</span>'
-    +'<span class="badge badge-orange">'+p+'</span></label>'
+    +'<span style="font-size:14px;font-weight:500;word-break:break-all;flex:1;min-width:0;line-height:1.3">'+n+'</span>'
+    +'<span class="badge badge-orange" style="flex-shrink:0">'+p+'</span></label>'
   })
   html+='</div>';$('subSelectBody').innerHTML=html;openModal('subSelectModal')
 }
