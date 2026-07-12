@@ -1,0 +1,7 @@
+🇭🇰阿里广州-香港 = snell, 8.148.184.196, 10012, psk=vFMyQbksWhQUG1dT, version=4, reuse=true, tfo=true, block-quic=on
+🇭🇰阿里香港-原生 = snell, 47.243.178.206, 10000, psk=vFMyQbksWhQUG1dT, version=4, reuse=true, tfo=true, block-quic=on
+🇭🇰香港-原生落地 = snell, 149.104.4.20, 10001, psk=vFMyQbksWhQUG1dT, version=4, reuse=true, tfo=true, block-quic=on
+🇯🇵中转DDPS原生 = snell, 8.211.173.168, 30001, psk=GDdLIkLked1AuQEy, version=4, reuse=true, tfo=true, block-quic=on
+🇯🇵DDPS-IIJ电信 = snell, 158.51.109.225, 9998, psk=GDdLIkLked1AuQEy, version=4, reuse=true, tfo=true, block-quic=on
+🇯🇵DDPS-电信IPV6 = snell, 2602:fd6f:100:3d::66, 9998, psk=GDdLIkLked1AuQEy, version=5, reuse=true, tfo=true, block-quic=on
+🇯🇵Gemini专用-1 = snell, 8.211.173.168, 10012, psk=GDdLIkLked1AuQEy, version=4, reuse=true, tfo=true, block-quic=on
