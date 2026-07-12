@@ -1,77 +1,90 @@
-# Pine-sub
+# Pine-sub v2
 
-基于 Cloudflare Workers 的订阅管理面板，支持多路订阅分发、节点授权管理、Telegram 机器人集成。
+基于 Cloudflare Workers 的订阅管理面板 — 界面美化 · 多路分发 · 测速 · 统计 · 导出
 
 ## 功能
 
-- **节点输入转换**：自动解析 SS / VMess / Snell / Trojan 链接为标准格式
-- **节点存储库**：统一管理所有节点，支持编辑和删除
-- **多路订阅分发**：创建多个订阅通道，为每个通道独立分配节点权限
-- **四种订阅格式**：每个通道自动生成 Universal / V2Ray / Surge / Clash 格式订阅链接
-- **Telegram 管家**：绑定 Bot Token 后可通过 TG 远程管理
-- **会话管理**：密钥登录 + Cookie 会话
+- **📦 节点管理** — 自动解析 SS/VMess/Snell/Trojan/Surge 格式，支持编辑/删除
+- **🔗 多路订阅分发** — 创建多个订阅通道，每个通道独立分配节点权限
+- **📡 五种订阅格式** — Universal / V2Ray / Surge / Clash / **Sing-box**
+- **⚡ 节点测速** — 一键测试所有节点 HTTP 延迟，结果实时显示
+- **📊 访问统计** — 统计每个订阅链接的被请求次数（持久化到 KV）
+- **📤 导出** — 导出节点 (txt) 和订阅配置 (json)
+- **🌙 暗色模式** — 支持明暗主题切换
+- **🤖 Telegram 集成** — 绑定 Bot Token 远程管理
+
+## 界面
+
+- Apple 风格设计，响应式布局
+- 四标签导航：节点 / 订阅 / 工具 / 统计
+- 节点延迟彩色指示（绿 < 300ms / 橙 < 800ms / 红 > 800ms）
 
 ## 部署
 
-### 前置条件
+### 前置
 
-1. Cloudflare 账户
-2. Cloudflare Workers 订阅（免费计划即可）
-3. Cloudflare KV 命名空间
+1. Cloudflare 账户 + Workers 订阅
+2. 创建一个 KV 命名空间
 
 ### 步骤
 
-1. **创建 KV 命名空间**
-
 ```bash
-npx wrangler kv:namespace create "KV"
-```
-
-2. **克隆仓库**
-
-```bash
+# 1. 克隆
 git clone https://github.com/Pinevu/pine-sub.git
 cd pine-sub
-```
 
-3. **配置 `wrangler.toml`**
+# 2. 创建 KV 命名空间
+npx wrangler kv:namespace create "KV"
 
-将 `kv_namespaces.id` 替换为你的 KV 命名空间 ID，设置 `ADMIN_KEY` 和 `SESSION_SECRET`。
+# 3. 编辑 wrangler.toml
+#    - 填入 KV 命名空间 ID
+#    - 设置 ADMIN_KEY（管理密码）
+#    - 设置 SESSION_SECRET（随机字符串）
 
-4. **部署**
-
-```bash
+# 4. 部署
 npx wrangler deploy
 ```
 
-5. **配置自定义域名**（可选）
+### 或通过 CF Dashboard
 
-在 Cloudflare Dashboard → Workers → pine-sub → Triggers → Custom Domain 添加域名。
+1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com/)
+2. Workers & Pages → 创建 Worker
+3. 将 `_worker.js` 全部内容粘贴到编辑器
+4. 设置 > 变量：
+   - `ADMIN_KEY` — 管理密码
+   - `SESSION_SECRET` — 会话密钥
+5. 设置 > KV 命名空间绑定：绑定名为 `KV`
+6. 部署
 
-### 环境变量
+## 环境变量
 
-| 变量 | 说明 | 默认值 |
-|------|------|--------|
-| `ADMIN_KEY` | 管理面板登录密钥 | `your-admin-password-here` |
-| `SESSION_SECRET` | 会话签名密钥（需修改） | `pine-sub-session-secret-change-me` |
+| 变量 | 说明 | 必需 |
+|------|------|------|
+| `ADMIN_KEY` | 管理面板登录密钥 | ✅ |
+| `SESSION_SECRET` | 会话签名密钥 | ✅ |
+| `KV` | KV 命名空间绑定 | ✅ |
 
-## 使用
+## API 端点
 
-1. 访问部署地址，输入管理密钥登录
-2. 在"节点输入转换"框中粘贴节点链接/配置，点击提交
-3. 在"多路订阅分发"中创建订阅通道，分配节点权限
-4. 客户端使用生成的订阅链接
+| 路径 | 方法 | 说明 |
+|------|------|------|
+| `/login` | POST | 密钥登录 |
+| `/logout` | GET | 登出 |
+| `/api/save_nodes` | POST | 保存节点 |
+| `/api/save_subs` | POST | 保存订阅配置 |
+| `/api/setup_tg` | POST | 设置 Telegram |
+| `/api/export/nodes` | GET | 导出节点 |
+| `/api/export/subs` | GET | 导出订阅配置 |
+| `/sub/:token/:format` | GET | 订阅链接 |
 
-## 节点格式支持
+## 订阅格式
 
-- `snell://` URI
-- `ss://` URI（支持 obfs 插件）
-- `trojan://` URI
-- `vmess://` URI（支持 JSON 标准格式和参数格式）
-- Surge 标准格式（`节点名 = 协议, 地址, 端口, ...`）
+- `universal` — Surge 格式
+- `v2ray` — Surge 格式
+- `surge` — Surge 格式
+- `clash` — Clash YAML
+- `singbox` — Sing-box JSON
 
-## 技术栈
+## 许可
 
-- Cloudflare Workers (JavaScript)
-- Cloudflare KV (数据持久化)
-- 原生 Web API，无外部依赖
+MIT
