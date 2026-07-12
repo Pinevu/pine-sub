@@ -5,7 +5,7 @@
 // @version      2.0.0
 // ==/UserScript==
 
-const ADMIN_PASSWORD = 'your-admin-password-here';
+const ADMIN_PASSWORD = 'wuandpl1982//@';
 const SITE_TITLE = 'Pine-sub';
 const SITE_DOMAIN = 'pine-sub.nooh.cc';
 let SESSION_SECRET = 'pine-sub-session-secret-change-me';
@@ -547,8 +547,10 @@ function genSingbox(lines) {
 }
 
 // ── 订阅请求 ──
-async function handleSub(req, kv, token, format) {
-  const [raw, subsRaw] = await Promise.all([kv.get('nodes')||'', kv.get('subs')||'[]']);
+async function handleSub(req, env, token, format) {
+  const kv = env.KV_STORE;
+  if (!kv) return new Response('KV not configured', {status:500});
+  const [raw, subsRaw] = await Promise.all([kv.get('surge_nodes')||'', kv.get('pine_subs')||'[]']);
   const subs = JSON.parse(subsRaw);
   const sub = subs.find(s => s.token === token);
   if (!sub) return new Response('Not Found', {status: 404, headers: {'Content-Type':'text/plain;charset=utf-8','Cache-Control':'no-store'}});
@@ -577,7 +579,7 @@ async function handleSub(req, kv, token, format) {
 async function createSession(env) {
   const c='abcdefghijklmnopqrstuvwxyz0123456789'; let s='';
   for(let i=0;i<32;i++) s+=c[Math.random()*c.length|0];
-  if(env.KV) await env.KV.put('session_'+s,'active',{expirationTtl:86400});
+  if(env.KV_STORE) await env.KV_STORE.put('session_'+s,'active',{expirationTtl:86400});
   return s;
 }
 
@@ -585,7 +587,7 @@ async function validateSession(req, env) {
   const ck = (req.headers.get('Cookie')||'').split(';').filter(c=>c.trim()).reduce((o,c)=>{const[k,...v]=c.trim().split('=');o[k.trim()]=v.join('=').trim();return o}, {});
   const sid = ck['pine_session'];
   if (!sid) return false;
-  if (env.KV) return (await env.KV.get('session_'+sid)) === 'active';
+  if (env.KV_STORE) return (await env.KV_STORE.get('session_'+sid)) === 'active';
   return sid.startsWith(SESSION_SECRET.slice(0,8));
 }
 
@@ -612,6 +614,10 @@ export default {
 
     if (request.method === 'OPTIONS') return new Response(null, {headers:{'Access-Control-Allow-Origin':'*','Access-Control-Allow-Methods':'GET,POST,OPTIONS','Access-Control-Allow-Headers':'Content-Type'}});
 
+    // 订阅链接（无需认证）
+    const subMatch = path.match(/^\/sub\/([a-z0-9]+)\/(universal|v2ray|surge|clash|singbox)$/);
+    if (subMatch) return handleSub(request, env, subMatch[1], subMatch[2]);
+
     // 登录
     if (path === '/login' && request.method === 'POST') {
       const fd = await request.text();
@@ -619,14 +625,14 @@ export default {
       if (pw === adminPW) {
         const sessionId = await createSession(env);
         const [nodes, subs, tg] = await Promise.all([
-          env.KV ? env.KV.get('nodes') : '',
-          env.KV ? env.KV.get('subs') : '[]',
-          env.KV ? env.KV.get('tg_token') : ''
+          env.KV_STORE ? env.KV_STORE.get('surge_nodes') : '',
+          env.KV_STORE ? env.KV_STORE.get('pine_subs') : '[]',
+          env.KV_STORE ? env.KV_STORE.get('tg_bot_token') : ''
         ]);
-        const stats = env.KV ? await getStats(env.KV, JSON.parse(subs||'[]')) : '{}';
+        const stats = env.KV_STORE ? await getStats(env.KV_STORE, JSON.parse(subs||'[]')) : '{}';
         return new Response(renderHTML({nodes, subs, tg: !!tg, stats}), {
           status: 200,
-          headers: {'Content-Type':'text/html;charset=utf-8', 'Set-Cookie': \`pine_session=\${sessionId}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400\`}
+          headers: {'Content-Type':'text/html;charset=utf-8', 'Set-Cookie': `pine_session=${sessionId}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`}
         });
       }
       return new Response(loginPage(true), {status:200, headers:{'Content-Type':'text/html;charset=utf-8'}});
@@ -635,7 +641,7 @@ export default {
     // 登出
     if (path === '/logout') {
       const ck = (request.headers.get('Cookie')||'').split(';').filter(c=>c.trim()).reduce((o,c)=>{const[k,...v]=c.trim().split('=');o[k.trim()]=v.join('=').trim();return o}, {});
-      if (ck['pine_session'] && env.KV) await env.KV.delete('session_'+ck['pine_session']);
+      if (ck['pine_session'] && env.KV_STORE) await env.KV_STORE.delete('session_'+ck['pine_session']);
       return new Response(loginPage(false), {status:200, headers:{'Content-Type':'text/html;charset=utf-8','Set-Cookie':'pine_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0'}});
     }
 
@@ -650,39 +656,35 @@ export default {
     // 主页
     if (path === '/' || path === '/admin') {
       const [nodes, subs, tg] = await Promise.all([
-        env.KV ? env.KV.get('nodes') : '',
-        env.KV ? env.KV.get('subs') : '[]',
-        env.KV ? env.KV.get('tg_token') : ''
+        env.KV_STORE ? env.KV_STORE.get('surge_nodes') : '',
+        env.KV_STORE ? env.KV_STORE.get('pine_subs') : '[]',
+        env.KV_STORE ? env.KV_STORE.get('tg_bot_token') : ''
       ]);
-      const stats = env.KV ? await getStats(env.KV, JSON.parse(subs||'[]')) : '{}';
+      const stats = env.KV_STORE ? await getStats(env.KV_STORE, JSON.parse(subs||'[]')) : '{}';
       return new Response(renderHTML({nodes, subs, tg: !!tg, stats}), {status:200, headers:{'Content-Type':'text/html;charset=utf-8'}});
     }
 
     // API
     if (path === '/api/save_nodes' && request.method === 'POST') {
-      if (env.KV) await env.KV.put('nodes', await request.text());
+      if (env.KV_STORE) await env.KV_STORE.put('surge_nodes', await request.text());
       return new Response('OK');
     }
     if (path === '/api/save_subs' && request.method === 'POST') {
-      if (env.KV) await env.KV.put('subs', await request.text());
+      if (env.KV_STORE) await env.KV_STORE.put('pine_subs', await request.text());
       return new Response('OK');
     }
     if (path === '/api/setup_tg' && request.method === 'POST') {
-      if (env.KV) await env.KV.put('tg_token', await request.text());
+      if (env.KV_STORE) await env.KV_STORE.put('tg_bot_token', await request.text());
       return new Response('OK');
     }
     if (path === '/api/export/nodes') {
-      const nodes = await (env.KV ? env.KV.get('nodes') : '');
+      const nodes = await (env.KV_STORE ? env.KV_STORE.get('surge_nodes') : '');
       return new Response(nodes||'', {status:200, headers:{'Content-Type':'text/plain;charset=utf-8','Content-Disposition':'attachment; filename="pine-nodes.txt"'}});
     }
     if (path === '/api/export/subs') {
-      const subs = await (env.KV ? env.KV.get('subs') : '[]');
+      const subs = await (env.KV_STORE ? env.KV_STORE.get('pine_subs') : '[]');
       return new Response(subs||'[]', {status:200, headers:{'Content-Type':'application/json;charset=utf-8','Content-Disposition':'attachment; filename="pine-subs.json"'}});
     }
-
-    // 订阅
-    const m = path.match(/^\/sub\/([a-z0-9]+)\/(universal|v2ray|surge|clash|singbox)$/);
-    if (m) return handleSub(request, env, m[1], m[2]);
 
     if (path === '/favicon.ico') return new Response('', {status:204});
     return new Response('Not Found', {status:404});
