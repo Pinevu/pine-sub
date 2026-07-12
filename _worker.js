@@ -307,7 +307,7 @@ function getProto(line){
   const eq = line.indexOf('=');
   if (eq < 0) return 'UNKNOWN';
   const r = line.substring(eq + 1).trim().split(',')[0].trim().toLowerCase();
-  if(r==='ss')return'SS';if(r==='snell')return'Snell';if(r==='trojan')return'Trojan';if(r==='vmess')return'VMess'
+  if(r==='ss'||r==='shadowsocks')return'SS';if(r==='snell')return'Snell';if(r==='trojan')return'Trojan';if(r==='vmess')return'VMess'
   return r.toUpperCase()
 }
 
@@ -505,6 +505,20 @@ window.addEventListener('DOMContentLoaded',()=>{
 }
 
 // ── 订阅格式生成 ──
+function manualB64(str) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let result = '', bytes = [];
+  for (let i = 0; i < str.length; i++) bytes.push(str.charCodeAt(i));
+  for (let i = 0; i < bytes.length; i += 3) {
+    const b = (bytes[i] << 16) | ((i+1 < bytes.length ? bytes[i+1] : 0) << 8) | (i+2 < bytes.length ? bytes[i+2] : 0);
+    result += chars[(b >> 18) & 63] + chars[(b >> 12) & 63] + chars[(b >> 6) & 63] + chars[b & 63];
+  }
+  const pad = bytes.length % 3;
+  if (pad === 1) result = result.slice(0, -2) + '==';
+  else if (pad === 2) result = result.slice(0, -1) + '=';
+  return result;
+}
+
 function genV2ray(lines, token, baseUrl) {
   // V2Ray 订阅格式: Base64 编码的 URI 列表
   // v2rayN/Shadowrocket/Loon 等客户端通用格式
@@ -519,10 +533,22 @@ function genV2ray(lines, token, baseUrl) {
       let psk = '';
       p.forEach(x => { if (x.startsWith('psk=')) psk = x.slice(4); });
       uris.push('snell://' + encodeURIComponent(psk) + '@' + p[1] + ':' + p[2] + '#' + encodeURIComponent(name));
-    } else if (p[0] === 'ss') {
-      let mp='', pw='';
-      p.forEach(x => { if(x.startsWith('encrypt-method=')) mp=x.slice(15); if(x.startsWith('password=')) pw=x.slice(9); });
-      uris.push('ss://' + btoa(mp+':'+pw) + '@' + p[1] + ':' + p[2] + '#' + encodeURIComponent(name));
+    } else if (p[0] === 'ss' || p[0] === 'Shadowsocks' || p[0] === 'shadowsocks') {
+      // Shadowsocks: 标准格式 "ss" 或 Surge 格式 "Shadowsocks"
+      let method = p[3] || '', pw = p[4] || '';
+      // 找 obfs 参数（可能在 p[5] 及之后）
+      let obfs = '', obfsHost = '';
+      p.slice(5).forEach(x => {
+        if (x.startsWith('obfs-name=') || x.startsWith('obfs=')) obfs = x.split('=')[1];
+        if (x.startsWith('obfs-host=')) obfsHost = x.split('=')[1];
+      });
+      // 去引号
+      if (pw.startsWith('"') && pw.endsWith('"')) pw = pw.slice(1, -1);
+      const raw = method + ':' + pw;
+      let uri = 'ss://' + manualB64(raw) + '@' + p[1] + ':' + p[2];
+      if (obfs) uri += '/?plugin=' + encodeURIComponent('obfs-local;obfs=' + obfs + ';obfs-host=' + (obfsHost || 'bing.com'));
+      uri += '#' + encodeURIComponent(name);
+      uris.push(uri);
     } else if (p[0] === 'trojan') {
       let pw='';
       p.forEach(x => { if(x.startsWith('password=')) pw=x.slice(9); });
@@ -531,18 +557,7 @@ function genV2ray(lines, token, baseUrl) {
   });
   if (uris.length === 0) return '';
   const text = uris.join('\n');
-  // 可靠的 Base64 编码（通用算法，不依赖 btoa）
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-  let result = '', bytes = [];
-  for (let i = 0; i < text.length; i++) bytes.push(text.charCodeAt(i));
-  for (let i = 0; i < bytes.length; i += 3) {
-    const b = (bytes[i] << 16) | ((i+1 < bytes.length ? bytes[i+1] : 0) << 8) | (i+2 < bytes.length ? bytes[i+2] : 0);
-    result += chars[(b >> 18) & 63] + chars[(b >> 12) & 63] + chars[(b >> 6) & 63] + chars[b & 63];
-  }
-  const pad = bytes.length % 3;
-  if (pad === 1) result = result.slice(0, -2) + '==';
-  else if (pad === 2) result = result.slice(0, -1) + '=';
-  return result;
+  return manualB64(text);
 }
 
 function genClash(lines) {
