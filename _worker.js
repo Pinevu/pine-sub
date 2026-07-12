@@ -304,7 +304,9 @@ function parseLink(line){
 }
 
 function getProto(line){
-  const r=(line.split('=')[1]||'').split(',')[0].trim().toLowerCase()
+  const eq = line.indexOf('=');
+  if (eq < 0) return 'UNKNOWN';
+  const r = line.substring(eq + 1).trim().split(',')[0].trim().toLowerCase();
   if(r==='ss')return'SS';if(r==='snell')return'Snell';if(r==='trojan')return'Trojan';if(r==='vmess')return'VMess'
   return r.toUpperCase()
 }
@@ -447,7 +449,7 @@ async function startSpeedTest(){
   if(!lines.length){toast('无节点');btn.disabled=false;btn.textContent='开始测速';return}
   res.innerHTML=lines.map((l,i)=>'<div class="test-item"><span class="name">'+l.split('=')[0].trim()+'</span><span id="tr-'+i+'">测试中...</span></div>').join('')
   for(let i=0;i<lines.length;i++){
-    const l=lines[i],parts=l.split('=')[1].split(',').map(s=>s.trim()),host=parts[1],port=parts[2]
+    const l=lines[i],eq2=l.indexOf('='),cfg2=l.substring(eq2+1).trim(),parts=cfg2.split(',').map(s=>s.trim()),host=parts[1],port=parts[2]
     const start=Date.now()
     try{
       const r=await fetch('https://'+host,{method:'HEAD',signal:AbortSignal.timeout(5000)})
@@ -507,7 +509,9 @@ function genClash(lines) {
   let y = 'port: 7890\nsocks-port: 7891\nmode: Rule\nlog-level: info\nproxies:\n';
   lines.forEach(l => {
     if (!l.includes('=')) return;
-    const [name, cfg] = [l.split('=')[0].trim(), l.split('=')[1].trim()];
+    const eq = l.indexOf('=');
+    const name = l.substring(0, eq).trim();
+    const cfg = l.substring(eq + 1).trim();
     const p = cfg.split(',').map(s=>s.trim());
     if (p[0] === 'snell') {
       let psk='', ver='2', obfs='', obfsHost='';
@@ -526,7 +530,9 @@ function genSingbox(lines) {
   const outbounds = [];
   lines.forEach(l => {
     if (!l.includes('=')) return;
-    const [name, cfg] = [l.split('=')[0].trim(), l.split('=')[1].trim()];
+    const eq = l.indexOf('=');
+    const name = l.substring(0, eq).trim();
+    const cfg = l.substring(eq + 1).trim();
     const p = cfg.split(',').map(s=>s.trim());
     if (p[0] === 'snell') {
       let psk='', ver='2';
