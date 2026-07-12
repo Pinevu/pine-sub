@@ -387,13 +387,13 @@ function renderSubs(){
     const u=baseUrl+'/sub/'+sub.token+'/universal',s=baseUrl+'/sub/'+sub.token+'/surge',v=baseUrl+'/sub/'+sub.token+'/v2ray',cl=baseUrl+'/sub/'+sub.token+'/clash',sb=baseUrl+'/sub/'+sub.token+'/singbox'
     const open=openSubIds.includes(sub.id),cls=open?'open':'',tgl=open?'收起 ▴':'展开 ▾'
     return \`<div class="sub-card">
-      <input class="name-input" style="width:100%;word-break:break-all" value="\${sub.name}" onchange="updateSub('\${sub.id}','name',this.value)" placeholder="名称">
+      <input class="name-input" style="width:100%;word-break:break-all" value="\${sub.name}" onchange="updateSub(subs[\${idx}].id,'name',this.value)" placeholder="名称">
       <div class="sub-meta">\${tag} · ID: \${sub.token.slice(0,8)}...</div>
       <div class="link-list">
         <div class="link-row"><span class="link-label" style="flex-shrink:0">通用</span><span class="link-url" onclick="copy('\${u}')">\${u}</span><button class="btn btn-sm btn-gray" style="flex-shrink:0" onclick="copy('\${u}')">复制</button></div>
       </div>
-      <button class="btn btn-ghost" style="width:100%;font-size:13px" onclick="toggleSub('\${sub.id}')">\${tgl}</button>
-      <div class="sub-collapse \${cls}" id="sc-\${sub.id}">
+      <button class="btn btn-ghost" style="width:100%;font-size:13px" onclick="toggleSub(\${idx})">\${tgl}</button>
+      <div class="sub-collapse \${cls}" id="sc-\${idx}">
         <div class="link-list">
           <div class="link-row"><span class="link-label">V2ray</span><span class="link-url" onclick="copy('\${v}')">\${v}</span><button class="btn btn-sm btn-gray" onclick="copy('\${v}')">复制</button></div>
           <div class="link-row"><span class="link-label">Surge</span><span class="link-url" onclick="copy('\${s}')">\${s}</span><button class="btn btn-sm btn-gray" onclick="copy('\${s}')">复制</button></div>
@@ -401,9 +401,9 @@ function renderSubs(){
           <div class="link-row"><span class="link-label">Sing-box</span><span class="link-url" onclick="copy('\${sb}')">\${sb}</span><button class="btn btn-sm btn-gray" onclick="copy('\${sb}')">复制</button></div>
         </div>
         <div class="sub-tools">
-          <button class="btn btn-sm btn-gray" onclick="triggerSelect('\${sub.id}')">节点授权</button>
-          <button class="btn btn-sm btn-orange" onclick="refreshToken(subs[' + idx + '].id)">重置</button>
-          \${subs.length>1?'<button class="btn btn-sm btn-red" onclick="deleteSub(subs[' + idx + '].id)">删除</button>':''}
+          <button class="btn btn-sm btn-gray" onclick="triggerSelect(subs[\${idx}].id)">节点授权</button>
+          <button class="btn btn-sm btn-orange" onclick="refreshToken(subs[\${idx}].id)">重置</button>
+          \${subs.length>1?'<button class="btn btn-sm btn-red" onclick="deleteSub(subs[\${idx}].id)">删除</button>':''}
         </div>
       </div>
     </div>\`
@@ -416,7 +416,7 @@ async function syncSubs(){
 }
 
 function updateSub(id,k,v){const s=subs.find(x=>x.id===id);if(s&&v.trim()){s[k]=v.trim();renderSubs();syncSubs()}}
-function toggleSub(id){const el=$('sc-'+id);el.classList.toggle('open');const i=openSubIds.indexOf(id);i>-1?openSubIds.splice(i,1):openSubIds.push(id);renderSubs()}
+function toggleSub(idx){const id=subs[idx]?subs[idx].id:idx;const el=$('sc-'+idx);if(!el)return;el.classList.toggle('open');const i=openSubIds.indexOf(id);i>-1?openSubIds.splice(i,1):openSubIds.push(id);renderSubs()}
 
 function addNewSub(){
   const c='abcdefghijklmnopqrstuvwxyz0123456789'
