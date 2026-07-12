@@ -12,21 +12,12 @@ let SESSION_SECRET = 'pine-sub-session-secret-change-me';
 
 // ── HTML 模板 ──
 function renderHTML(data) {
-  const { nodes, subs, tg, stats } = data;
+  const { nodes, subs, tg } = data;
   const baseUrl = `https://${SITE_DOMAIN}`;
 
   const e = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 
   const nodeLines = (nodes||'').split('\n').filter(l=>l.trim()&&!l.trim().startsWith('#'));
-  const subArr = JSON.parse(subs||'[]');
-  const statsObj = JSON.parse(stats||'{}');
-
-  // 构建订阅统计 HTML
-  let statsHtml = '';
-  subArr.forEach(s => {
-    const c = statsObj[s.token] || 0;
-    statsHtml += `<div class="stat-row"><span>${e(s.name)}</span><span class="stat-num">${c} 次</span></div>`;
-  });
 
   return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -109,9 +100,6 @@ textarea{resize:vertical;min-height:80px}
 .modal-actions{display:flex;gap:10px;margin-top:16px}
 .modal-actions .btn{flex:1;justify-content:center}
 /* 统计 */
-.stat-row{display:flex;justify-content:space-between;padding:8px 0;font-size:14px;border-bottom:1px solid var(--border)}
-.stat-row:last-child{border:none}
-.stat-num{font-weight:600;font-variant-numeric:tabular-nums}
 /* 测速结果 */
 .test-progress{margin:12px 0;display:none}
 .test-bar{height:4px;background:var(--blue);border-radius:2px;transition:width .3s;width:0}
@@ -151,7 +139,6 @@ textarea{resize:vertical;min-height:80px}
     <div class="tab active" data-tab="nodes">📦 节点</div>
     <div class="tab" data-tab="subs">🔗 订阅</div>
     <div class="tab" data-tab="tools">⚡ 工具</div>
-    <div class="tab" data-tab="stats">📊 统计</div>
   </div>
 
   <!-- ── Tab: 节点 ── -->
@@ -215,12 +202,6 @@ textarea{resize:vertical;min-height:80px}
   </div>
 
   <!-- ── Tab: 统计 ── -->
-  <div class="tab-content" id="tab-stats">
-    <div class="card">
-      <div class="card-title">📊 订阅访问统计</div>
-      <div class="hint">每个订阅链接被请求的次数（部署后开始累计）</div>
-      <div id="statsContainer">${statsHtml || '<div class="empty">暂无数据</div>'}</div>
-    </div>
   </div>
 </div>
 
@@ -275,7 +256,28 @@ document.querySelectorAll('.tab').forEach(tab=>{
 // ── 链接解析 ──
 function parseLink(line){
   line=line.trim();if(!line)return'';
-  if(line.includes('=') && !line.startsWith('snell://') && !line.startsWith('ss://') && !line.startsWith('trojan://') && !line.startsWith('vmess://')) return line;
+  if(line.includes('=') && !line.startsWith('snell://') && !line.startsWith('ss://') && !line.startsWith('trojan://') && !line.startsWith('vmess://')) {
+    const eq = line.indexOf('=');
+    const name = line.substring(0, eq).trim();
+    const cfg = line.substring(eq + 1).trim();
+    const p = cfg.split(',').map(s => s.trim());
+    if (p[0].toLowerCase() === 'shadowsocks') {
+      let method = p[3] || '', pw = p[4] || '';
+      if (pw.startsWith('"') && pw.endsWith('"')) pw = '"' + pw.slice(1, -1) + '"';
+      let r = name + ' = ss, ' + p[1] + ', ' + p[2] + ', encrypt-method=' + method + ', password=' + pw + ', udp-relay=true';
+      for (let i = 5; i < p.length; i++) {
+        let kv = p[i];
+        if (kv.startsWith('obfs-name=')) r += ', obfs=' + kv.split('=')[1];
+        else if (kv.startsWith('obfs-host=')) r += ', obfs-host=' + kv.split('=')[1];
+        else if (kv === 'fast-open=true') r += ', tfo=true';
+        else if (kv === 'udp=true') {}
+        else if (kv === 'block-quic=false') {}
+        else r += ', ' + kv;
+      }
+      return r;
+    }
+    return line;
+  }
   try{
     if(line.startsWith('snell://')){const u=new URL(line);return(decodeURIComponent(u.hash.slice(1))||'Snell')+' = snell, '+u.hostname+', '+u.port+', psk='+u.username+', version=4, reuse=true'}
     if(line.startsWith('trojan://')){const u=new URL(line);return(decodeURIComponent(u.hash.slice(1))||'Trojan')+' = trojan, '+u.hostname+', '+u.port+', password='+u.username+', udp-relay=true'}
@@ -623,11 +625,6 @@ async function handleSub(req, env, token, format) {
   const sub = subs.find(s => s.token === token);
   if (!sub) return new Response('Not Found', {status: 404, headers: {'Content-Type':'text/plain;charset=utf-8','Cache-Control':'no-store'}});
 
-  // 统计 +1
-  const statsKey = 'stats_' + token;
-  const statVal = await kv.get(statsKey) || '0';
-  await kv.put(statsKey, String(parseInt(statVal) + 1));
-
   const all = raw.split('\n').filter(l=>l.trim()&&!l.trim().startsWith('#'));
   let sel = sub.type === 'all' ? all : all.filter(l => (sub.selected||[]).includes(l.split('=')[0].trim()));
   if (!sel.length) return new Response('', {status:200, headers:{'Content-Type':'text/plain;charset=utf-8','Cache-Control':'no-store'}});
@@ -697,8 +694,7 @@ export default {
           env.KV_STORE ? env.KV_STORE.get('pine_subs') : '[]',
           env.KV_STORE ? env.KV_STORE.get('tg_bot_token') : ''
         ]);
-        const stats = env.KV_STORE ? await getStats(env.KV_STORE, JSON.parse(subs||'[]')) : '{}';
-        return new Response(renderHTML({nodes, subs, tg: !!tg, stats}), {
+        return new Response(renderHTML({nodes, subs, tg: !!tg}), {
           status: 200,
           headers: {'Content-Type':'text/html;charset=utf-8', 'Set-Cookie': `pine_session=${sessionId}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`}
         });
@@ -728,8 +724,7 @@ export default {
         env.KV_STORE ? env.KV_STORE.get('pine_subs') : '[]',
         env.KV_STORE ? env.KV_STORE.get('tg_bot_token') : ''
       ]);
-      const stats = env.KV_STORE ? await getStats(env.KV_STORE, JSON.parse(subs||'[]')) : '{}';
-      return new Response(renderHTML({nodes, subs, tg: !!tg, stats}), {status:200, headers:{'Content-Type':'text/html;charset=utf-8'}});
+      return new Response(renderHTML({nodes, subs, tg: !!tg}), {status:200, headers:{'Content-Type':'text/html;charset=utf-8'}});
     }
 
     // API
@@ -759,12 +754,4 @@ export default {
   }
 };
 
-// ── 统计 ──
-async function getStats(kv, subs) {
-  const o = {};
-  for (const s of subs) {
-    const v = await kv.get('stats_' + s.token) || '0';
-    o[s.token] = parseInt(v);
-  }
-  return JSON.stringify(o);
-}
+//
