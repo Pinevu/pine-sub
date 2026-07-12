@@ -505,7 +505,9 @@ window.addEventListener('DOMContentLoaded',()=>{
 }
 
 // ── 订阅格式生成 ──
-function genV2ray(lines) {
+function genV2ray(lines, token, baseUrl) {
+  // V2Ray 订阅格式: Base64 编码的 URI 列表
+  // v2rayN/Shadowrocket/Loon 等客户端通用格式
   let uris = [];
   lines.forEach(l => {
     if (!l.includes('=')) return;
@@ -514,23 +516,33 @@ function genV2ray(lines) {
     const cfg = l.substring(eq + 1).trim();
     const p = cfg.split(',').map(s=>s.trim());
     if (p[0] === 'snell') {
-      let psk='';
-      p.forEach(x => { if(x.startsWith('psk=')) psk=x.slice(4); });
+      let psk = '';
+      p.forEach(x => { if (x.startsWith('psk=')) psk = x.slice(4); });
       uris.push('snell://' + encodeURIComponent(psk) + '@' + p[1] + ':' + p[2] + '#' + encodeURIComponent(name));
     } else if (p[0] === 'ss') {
       let mp='', pw='';
       p.forEach(x => { if(x.startsWith('encrypt-method=')) mp=x.slice(15); if(x.startsWith('password=')) pw=x.slice(9); });
-      const raw = mp + ':' + pw;
-      const b64 = btoa(raw);
-      uris.push('ss://' + b64 + '@' + p[1] + ':' + p[2] + '#' + encodeURIComponent(name));
+      uris.push('ss://' + btoa(mp+':'+pw) + '@' + p[1] + ':' + p[2] + '#' + encodeURIComponent(name));
     } else if (p[0] === 'trojan') {
       let pw='';
       p.forEach(x => { if(x.startsWith('password=')) pw=x.slice(9); });
       uris.push('trojan://' + encodeURIComponent(pw) + '@' + p[1] + ':' + p[2] + '#' + encodeURIComponent(name));
     }
   });
+  if (uris.length === 0) return '';
   const text = uris.join('\n');
-  try { return btoa(text); } catch(e) { return text; }
+  // 可靠的 Base64 编码（通用算法，不依赖 btoa）
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let result = '', bytes = [];
+  for (let i = 0; i < text.length; i++) bytes.push(text.charCodeAt(i));
+  for (let i = 0; i < bytes.length; i += 3) {
+    const b = (bytes[i] << 16) | ((i+1 < bytes.length ? bytes[i+1] : 0) << 8) | (i+2 < bytes.length ? bytes[i+2] : 0);
+    result += chars[(b >> 18) & 63] + chars[(b >> 12) & 63] + chars[(b >> 6) & 63] + chars[b & 63];
+  }
+  const pad = bytes.length % 3;
+  if (pad === 1) result = result.slice(0, -2) + '==';
+  else if (pad === 2) result = result.slice(0, -1) + '=';
+  return result;
 }
 
 function genClash(lines) {
@@ -584,6 +596,7 @@ function genSingbox(lines) {
 async function handleSub(req, env, token, format) {
   const kv = env.KV_STORE;
   if (!kv) return new Response('KV not configured', {status:500});
+  const baseUrl = 'https://' + SITE_DOMAIN;
   const [raw, subsRaw] = await Promise.all([kv.get('surge_nodes')||'', kv.get('pine_subs')||'[]']);
   const subs = JSON.parse(subsRaw);
   const sub = subs.find(s => s.token === token);
@@ -601,7 +614,7 @@ async function handleSub(req, env, token, format) {
   let body='', ct='text/plain;charset=utf-8';
   switch(format) {
     case 'surge': body = sel.join('\n')+'\n'; break;
-    case 'v2ray': body = genV2ray(sel); break;
+    case 'v2ray': body = await genV2ray(sel, token, baseUrl); break;
     case 'clash': body = genClash(sel); ct = 'text/yaml;charset=utf-8'; break;
     case 'singbox': body = genSingbox(sel); ct = 'application/json;charset=utf-8'; break;
     default: body = sel.join('\n')+'\n';
