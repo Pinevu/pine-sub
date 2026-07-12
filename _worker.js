@@ -378,7 +378,7 @@ async function deleteNode(i){
 function renderSubs(){
   const c=$('subsListContainer')
   if(!subs.length){c.innerHTML='<div class="empty">暂无订阅通道，点击上方创建</div>';return}
-  c.innerHTML=subs.map(sub=>{
+  c.innerHTML=subs.map((sub,idx)=>{
     const tag=sub.type==='all'?'<span class="badge badge-green">全量节点</span>':'<span class="badge badge-orange" style="word-break:keep-all;white-space:nowrap">限定 '+sub.selected.length+' 个</span>'
     const u=baseUrl+'/sub/'+sub.token+'/universal',s=baseUrl+'/sub/'+sub.token+'/surge',v=baseUrl+'/sub/'+sub.token+'/v2ray',cl=baseUrl+'/sub/'+sub.token+'/clash',sb=baseUrl+'/sub/'+sub.token+'/singbox'
     const open=openSubIds.includes(sub.id),cls=open?'open':'',tgl=open?'收起 ▴':'展开 ▾'
@@ -398,8 +398,8 @@ function renderSubs(){
         </div>
         <div class="sub-tools">
           <button class="btn btn-sm btn-gray" onclick="triggerSelect('\${sub.id}')">节点授权</button>
-          <button class="btn btn-sm btn-orange" data-sid="\${sub.id}" onclick="refreshToken(this.dataset.sid)">重置</button>
-            \${subs.length>1?'<button class="btn btn-sm btn-red" data-sid="\${sub.id}" onclick="deleteSub(this.dataset.sid)">删除</button>':''}
+          <button class="btn btn-sm btn-orange" onclick="refreshToken(subs[' + idx + '].id)">重置</button>
+          \${subs.length>1?'<button class="btn btn-sm btn-red" onclick="deleteSub(subs[' + idx + '].id)">删除</button>':''}
         </div>
       </div>
     </div>\`
