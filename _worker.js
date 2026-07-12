@@ -269,7 +269,7 @@ document.querySelectorAll('.tab').forEach(tab=>{
 // ── 链接解析 ──
 function parseLink(line){
   line=line.trim();if(!line)return'';
-  if(line.includes('=')&&!/^(snell|ss|trojan|vmess):\/\//i.test(line))return line;
+  if(line.includes('=') && !line.startsWith('snell://') && !line.startsWith('ss://') && !line.startsWith('trojan://') && !line.startsWith('vmess://')) return line;
   try{
     if(line.startsWith('snell://')){const u=new URL(line);return(decodeURIComponent(u.hash.slice(1))||'Snell')+' = snell, '+u.hostname+', '+u.port+', psk='+u.username+', version=4, reuse=true'}
     if(line.startsWith('trojan://')){const u=new URL(line);return(decodeURIComponent(u.hash.slice(1))||'Trojan')+' = trojan, '+u.hostname+', '+u.port+', password='+u.username+', udp-relay=true'}
@@ -390,8 +390,8 @@ function renderSubs(){
         </div>
         <div class="sub-tools">
           <button class="btn btn-sm btn-gray" onclick="triggerSelect('\${sub.id}')">节点授权</button>
-          <button class="btn btn-sm btn-orange" onclick="refreshToken('\${sub.id}')">重置</button>
-          \${subs.length>1?'<button class="btn btn-sm btn-red" onclick="deleteSub('\${sub.id}')">删除</button>':''}
+          <button class="btn btn-sm btn-orange" data-sid="\${sub.id}" onclick="refreshToken(this.dataset.sid)">重置</button>
+            \${subs.length>1?'<button class="btn btn-sm btn-red" data-sid="\${sub.id}" onclick="deleteSub(this.dataset.sid)">删除</button>':''}
         </div>
       </div>
     </div>\`
@@ -497,7 +497,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   try{subs=JSON.parse($('rawSubs').value)}catch(e){subs=[]}
   renderNodeList();renderSubs()
 });
-<\/script>
+<\x2Fscript>
 </body>
 </html>`;
 }
