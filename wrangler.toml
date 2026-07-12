@@ -1,0 +1,19 @@
+name = "pine-sub"
+main = "_worker.js"
+compatibility_date = "2024-12-01"
+
+# KV namespace for data persistence
+[[kv_namespaces]]
+binding = "KV"
+id = "YOUR_KV_NAMESPACE_ID"
+preview_id = "YOUR_PREVIEW_KV_ID"
+
+# Environment variables
+[vars]
+ADMIN_KEY = "your-admin-password-here"
+SESSION_SECRET = "change-to-a-random-string"
+
+# Routes
+routes = [
+  { pattern = "pine-sub.nooh.cc", custom_domain = true }
+]
