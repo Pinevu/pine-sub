@@ -518,8 +518,13 @@ function genV2ray(lines, token, baseUrl) {
       p.forEach(x => { if (x.startsWith('psk=')) psk = x.slice(4); });
       uris.push('snell://' + encodeURIComponent(psk) + '@' + p[1] + ':' + p[2] + '#' + encodeURIComponent(name));
     } else if (p[0] === 'ss' || p[0] === 'Shadowsocks' || p[0] === 'shadowsocks') {
-      // Shadowsocks: 标准格式 "ss" 或 Surge 格式 "Shadowsocks"
-      let method = p[3] || '', pw = p[4] || '';
+      let method = '', pw = '';
+      if (p[0] === 'Shadowsocks' || p[0] === 'shadowsocks') {
+        method = p[3] || '';
+        pw = p[4] || '';
+      } else {
+        p.forEach(x => { if (x.startsWith('encrypt-method=')) method = x.slice(15); if (x.startsWith('password=')) pw = x.slice(9); });
+      }
       // 找 obfs 参数（可能在 p[5] 及之后）
       let obfs = '', obfsHost = '';
       p.slice(5).forEach(x => {
