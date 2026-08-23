@@ -513,11 +513,7 @@ function genV2ray(lines, token, baseUrl) {
     const name = l.substring(0, eq).trim();
     const cfg = l.substring(eq + 1).trim();
     const p = cfg.split(',').map(s=>s.trim());
-    if (p[0] === 'snell') {
-      let psk = '';
-      p.forEach(x => { if (x.startsWith('psk=')) psk = x.slice(4); });
-      uris.push('snell://' + encodeURIComponent(psk) + '@' + p[1] + ':' + p[2] + '#' + encodeURIComponent(name));
-    } else if (p[0] === 'ss' || p[0] === 'Shadowsocks' || p[0] === 'shadowsocks') {
+    if (p[0] === 'ss' || p[0] === 'Shadowsocks' || p[0] === 'shadowsocks') {
       let method = '', pw = '';
       if (p[0] === 'Shadowsocks' || p[0] === 'shadowsocks') {
         method = p[3] || '';
@@ -544,7 +540,7 @@ function genV2ray(lines, token, baseUrl) {
       uris.push('trojan://' + encodeURIComponent(pw) + '@' + p[1] + ':' + p[2] + '#' + encodeURIComponent(name));
     }
   });
-  if (uris.length === 0) return '';
+  if (uris.length === 0) return manualB64('No compatible nodes for this client. Snell nodes are not supported in v2ray format. Use universal/surge format instead.');
   const text = uris.join('\n');
   return manualB64(text);
 }
