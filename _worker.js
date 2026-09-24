@@ -155,20 +155,16 @@ textarea{resize:vertical;min-height:76px}
     <div class="card">
       <div class="card-title">
         <span>🗂️ 节点库</span>
-        <div style="display:flex;gap:8px;align-items:center">
-                    <span class="badge badge-blue" id="nodeCount">${nodeLines.length} 个</span>
-          <span class="badge badge-orange" id="nodeProtoCount" style="margin-left:4px;font-size:10px"></span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="badge badge-blue" id="nodeCount">${nodeLines.length} 个</span>
+          <span class="badge badge-orange" id="nodeProtoCount" style="font-size:10px"></span>
+          <button class="btn btn-sm btn-orange" onclick="openOrderModal()">↕️ 调整顺序</button>
           <button class="btn btn-sm btn-gray" onclick="toggleNodeList()" id="toggleNodesBtn">展开</button>
         </div>
       </div>
-      <div class="hint">勾选节点可分配至订阅通道</div>
-      <div style="display:flex;gap:8px;margin-bottom:10px">
-        <input id="nodeFilter" placeholder="🔍 搜索节点名称..." style="margin:0;font-family:var(--font)" oninput="renderNodeList()">
-        <select id="nodeSort" style="width:128px;padding:10px 8px;font-family:var(--font);background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:10px" onchange="changeNodeSort(this.value)">
-          <option value="default">默认顺序</option>
-          <option value="name">名称排序</option>
-          <option value="protocol">协议分组</option>
-        </select>
+      <div class="hint">节点的排列顺序将直接决定 Surge / Clash 等订阅中节点的实际更新顺序</div>
+      <div style="margin-bottom:10px">
+        <input id="nodeFilter" placeholder="🔍 快速搜索节点..." style="margin:0;font-family:var(--font)" oninput="renderNodeList()">
       </div>
       <div id="nodeList"></div>
     </div>
@@ -222,6 +218,26 @@ textarea{resize:vertical;min-height:76px}
     <div class="modal-title">节点授权分配</div>
     <div class="modal-body" id="subSelectBody"></div>
     <div class="modal-actions"><button class="btn btn-gray" onclick="closeModal('subSelectModal')">取消</button><button class="btn" onclick="saveSubSelection()">确认</button></div>
+  </div>
+</div>
+
+<!-- 模态框：调整节点顺序（直接影响Surge等订阅输出顺序） -->
+<div class="modal-overlay" id="nodeOrderModal">
+  <div class="modal-card" style="max-width:460px">
+    <div class="modal-title">调整节点订阅顺序</div>
+    <div class="hint" style="text-align:center;margin-top:-8px;margin-bottom:12px;font-size:12px">
+      此处保存的顺序即为 Surge / Clash / Sing-box 等订阅更新时的实际排列次序
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:12px">
+      <button class="btn btn-sm btn-gray" style="flex:1" onclick="sortOrderByName()">🔤 按名称A-Z</button>
+      <button class="btn btn-sm btn-gray" style="flex:1" onclick="sortOrderByProto()">🏷️ 按协议分组</button>
+      <button class="btn btn-sm btn-gray" onclick="resetOrderModal()">↩️ 恢复初始</button>
+    </div>
+    <div class="modal-body" id="nodeOrderBody" style="max-height:55vh"></div>
+    <div class="modal-actions">
+      <button class="btn btn-gray" onclick="closeModal('nodeOrderModal')">取消</button>
+      <button class="btn btn-green" onclick="saveNodeOrder()">保存并同步订阅</button>
+    </div>
   </div>
 </div>
 
@@ -331,22 +347,121 @@ function toggleNodeList(){
 function renderNodeList(){
   const el=$('nodeList'),raw=$('rawNodes')
   const lines=raw.value.split('\\n').filter(l=>l.trim()&&!l.trim().startsWith('#'))
-  // 搜索过滤
   const q=($('nodeFilter').value||'').trim().toLowerCase()
   let filtered=q?lines.filter(l=>l.split('=')[0].trim().toLowerCase().includes(q)):lines.slice()
-  const sort=($('nodeSort')&&$('nodeSort').value)||'default'
-  if(sort==='name') filtered.sort((a,b)=>a.split('=')[0].trim().localeCompare(b.split('=')[0].trim(),'zh-CN'))
-  if(sort==='protocol') filtered.sort((a,b)=>getProto(a).localeCompare(getProto(b))||a.split('=')[0].localeCompare(b.split('=')[0],'zh-CN'))
   $('nodeCount').textContent=filtered.length+'/'+lines.length+' 个'
-  // 协议统计
   const ss=lines.filter(l=>{const p=l.split('=')[1];return p&&(p.trim().toLowerCase().startsWith('ss,')||p.trim().toLowerCase().startsWith('shadowsocks,'))}).length
   const sn=lines.length-ss
   $('nodeProtoCount').textContent=sn+'Snell '+ss+'SS'
   if(!filtered.length){el.innerHTML=lines.length?'<div class="empty">无匹配节点</div>':'<div class="empty">暂无节点</div>';return}
-  el.innerHTML=filtered.map((l,i)=>{
-    const name=l.split('=')[0].trim(),proto=getProto(l)
-    return \`<div class="node-item"><div class="info"><div class="name" style="word-break:break-all">\${name}</div><div class="meta"><span class="badge badge-orange" style="flex-shrink:0">\${proto}</span><span class="latency lat-0" id="lat-\${i}">-- ms</span></div></div><div class="actions"><button class="btn btn-sm btn-gray" onclick="editNode(\${i})">编辑</button><button class="btn btn-sm btn-red" onclick="deleteNode(\${i})">删除</button></div></div>\`
+  el.innerHTML=filtered.map((l,filteredIdx)=>{
+    const realIdx=lines.indexOf(l);
+    const name=l.split('=')[0].trim(),proto=getProto(l);
+    return \`<div class="node-item">
+      <span style="font-size:12px;color:var(--sub);font-weight:600;min-width:24px">#\${realIdx+1}</span>
+      <div class="info"><div class="name" style="word-break:break-all">\${name}</div><div class="meta"><span class="badge badge-orange" style="flex-shrink:0">\${proto}</span><span class="latency lat-0" id="lat-\${realIdx}">-- ms</span></div></div>
+      <div class="actions">
+        <button class="btn btn-sm btn-gray" style="padding:5px 8px;font-size:12px" title="上移" onclick="moveNodeDirect(\${realIdx}, -1)">⬆️</button>
+        <button class="btn btn-sm btn-gray" style="padding:5px 8px;font-size:12px" title="下移" onclick="moveNodeDirect(\${realIdx}, 1)">⬇️</button>
+        <button class="btn btn-sm btn-gray" onclick="editNode(\${realIdx})">编辑</button>
+        <button class="btn btn-sm btn-red" onclick="deleteNode(\${realIdx})">删除</button>
+      </div>
+    </div>\`
   }).join('')
+}
+
+async function moveNodeDirect(i, dir){
+  const raw=$('rawNodes');
+  let lines=raw.value.split('\\n').filter(l=>l.trim()&&!l.trim().startsWith('#'));
+  const target=i+dir;
+  if(target<0 || target>=lines.length) return;
+  const temp=lines[i];
+  lines[i]=lines[target];
+  lines[target]=temp;
+  raw.value=lines.join('\\n');
+  const ok=await saveNodes();
+  if(ok) toast('顺序已更新');
+}
+
+// ── 调整顺序专属弹窗 ──
+let orderLines=[], initialOrderLines=[];
+
+function openOrderModal(){
+  const raw=$('rawNodes');
+  orderLines=raw.value.split('\\n').filter(l=>l.trim()&&!l.trim().startsWith('#'));
+  if(!orderLines.length){toast('暂无节点');return}
+  initialOrderLines=orderLines.slice();
+  renderOrderModalList();
+  openModal('nodeOrderModal');
+}
+
+function renderOrderModalList(){
+  const body=$('nodeOrderBody');
+  let html='<div style="display:flex;flex-direction:column;gap:6px">';
+  orderLines.forEach((l,i)=>{
+    const name=l.split('=')[0].trim();
+    const p=getProto(l);
+    html+='<div class="modal-item" style="padding:8px 10px;gap:6px">'
+      +'<span style="font-size:12px;color:var(--sub);font-weight:600;min-width:26px">#'+(i+1)+'</span>'
+      +'<span class="mi-name">'+name+'</span>'
+      +'<span class="badge badge-orange mi-badge">'+p+'</span>'
+      +'<div style="display:flex;gap:4px;flex-shrink:0;margin-left:4px">'
+      +'<button class="btn btn-sm btn-gray" style="padding:4px 6px;font-size:11px" title="置顶" onclick="moveOrderTop('+i+')">🔝</button>'
+      +'<button class="btn btn-sm btn-gray" style="padding:4px 6px;font-size:11px" title="上移" onclick="moveOrderItem('+i+', -1)">⬆️</button>'
+      +'<button class="btn btn-sm btn-gray" style="padding:4px 6px;font-size:11px" title="下移" onclick="moveOrderItem('+i+', 1)">⬇️</button>'
+      +'</div>'
+      +'</div>';
+  });
+  html+='</div>';
+  body.innerHTML=html;
+}
+
+function moveOrderTop(i){
+  if(i===0) return;
+  const item=orderLines.splice(i,1)[0];
+  orderLines.unshift(item);
+  renderOrderModalList();
+}
+
+function moveOrderItem(i, dir){
+  if(dir===-1){
+    if(i===0) return;
+    const temp=orderLines[i];
+    orderLines[i]=orderLines[i-1];
+    orderLines[i-1]=temp;
+  }else if(dir===1){
+    if(i===orderLines.length-1) return;
+    const temp=orderLines[i];
+    orderLines[i]=orderLines[i+1];
+    orderLines[i+1]=temp;
+  }
+  renderOrderModalList();
+}
+
+function sortOrderByName(){
+  orderLines.sort((a,b)=>a.split('=')[0].trim().localeCompare(b.split('=')[0].trim(),'zh-CN'));
+  renderOrderModalList();
+}
+
+function sortOrderByProto(){
+  orderLines.sort((a,b)=>getProto(a).localeCompare(getProto(b))||a.split('=')[0].localeCompare(b.split('=')[0],'zh-CN'));
+  renderOrderModalList();
+}
+
+function resetOrderModal(){
+  orderLines=initialOrderLines.slice();
+  renderOrderModalList();
+  toast('已恢复初始顺序');
+}
+
+async function saveNodeOrder(){
+  if(!orderLines.length) return;
+  $('rawNodes').value=orderLines.join('\\n');
+  const ok=await saveNodes();
+  if(ok){
+    closeModal('nodeOrderModal');
+    toast('已保存新顺序，Surge等订阅已同步更新！');
+  }
 }
 
 // ── 节点 CRUD ──
@@ -438,25 +553,37 @@ function addNewSub(){
 function deleteSub(id){if(!confirm('废除后链接将失效'))return;subs=subs.filter(s=>s.id!==id);renderSubs();syncSubs()}
 function refreshToken(id){if(!confirm('重置凭证？'))return;const s=subs.find(x=>x.id===id);if(s){const c='abcdefghijklmnopqrstuvwxyz0123456789';let r='';for(let i=0;i<16;i++)r+=c[Math.random()*c.length|0];s.token=r;renderSubs();syncSubs();toast('已重置')}}
 
-function changeNodeSort(val){localStorage.setItem('pine-node-sort',val);renderNodeList()}
-function changeModalSort(val){localStorage.setItem('pine-node-sort',val);triggerSelect(editingSubId)}
-
 function triggerSelect(id){
   editingSubId=id;const sub=subs.find(s=>s.id===id),raw=$('rawNodes')
   let lines=raw.value.split('\\n').filter(l=>l.trim()&&!l.trim().startsWith('#'))
   if(!lines.length){toast('节点库为空');return}
-  const sort=localStorage.getItem('pine-node-sort')||'default'
-  if(sort==='name') lines.sort((a,b)=>a.split('=')[0].trim().localeCompare(b.split('=')[0].trim(),'zh-CN'))
-  if(sort==='protocol') lines.sort((a,b)=>getProto(a).localeCompare(getProto(b))||a.split('=')[0].localeCompare(b.split('=')[0],'zh-CN'))
-  let html='<div style="display:flex;gap:8px;margin-bottom:8px"><select id="modalNodeSort" onchange="changeModalSort(this.value)" style="flex:1;padding:8px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px"><option value="default" '+(sort==='default'?'selected':'')+'>默认顺序</option><option value="name" '+(sort==='name'?'selected':'')+'>名称排序</option><option value="protocol" '+(sort==='protocol'?'selected':'')+'>协议分组</option></select><button class="btn btn-sm btn-gray" onclick="modalCheckAll(true)">全选</button><button class="btn btn-sm btn-gray" onclick="modalCheckAll(false)">清空</button></div><div style="display:flex;flex-direction:column;gap:8px">'
-  lines.forEach(l=>{
+  let html='<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">'
+    +'<button class="btn btn-sm btn-gray" onclick="modalCheckAll(true)">全选</button>'
+    +'<button class="btn btn-sm btn-gray" onclick="modalCheckAll(false)">清空</button>'
+    +'<button class="btn btn-sm btn-gray" onclick="modalCheckSS()">仅选SS</button>'
+    +'<button class="btn btn-sm btn-gray" onclick="modalCheckSnell()">仅选Snell</button>'
+    +'</div><div style="display:flex;flex-direction:column;gap:6px">'
+  lines.forEach((l,i)=>{
     const n=l.split('=')[0].trim(),p=getProto(l),ck=sub.type==='all'||(sub.selected||[]).includes(n)
-    html+='<label style="display:flex;align-items:center;gap:8px;padding:10px;background:var(--bg);border-radius:8px;cursor:pointer">'
-    +'<input type="checkbox" class="ncb" value="'+n.replace(/"/g,'&quot;')+'" '+(ck?'checked':'')+'>'
-    +'<span style="font-size:14px;font-weight:500;word-break:break-all;flex:1;min-width:0;line-height:1.3">'+n+'</span>'
-    +'<span class="badge badge-orange" style="flex-shrink:0">'+p+'</span></label>'
+    html+='<label class="modal-item" style="padding:9px 12px;gap:8px">'
+      +'<span style="font-size:12px;color:var(--sub);font-weight:600;min-width:24px">#'+(i+1)+'</span>'
+      +'<input type="checkbox" class="ncb" data-proto="'+p+'" value="'+n.replace(/"/g,'&quot;')+'" '+(ck?'checked':'')+'>'
+      +'<span class="mi-name">'+n+'</span>'
+      +'<span class="badge badge-orange mi-badge">'+p+'</span></label>'
   })
   html+='</div>';$('subSelectBody').innerHTML=html;openModal('subSelectModal')
+}
+
+function modalCheckAll(checked){
+  document.querySelectorAll('.ncb').forEach(c=>{c.checked=checked})
+}
+
+function modalCheckSS(){
+  document.querySelectorAll('.ncb').forEach(c=>{c.checked=(c.dataset.proto==='SS')})
+}
+
+function modalCheckSnell(){
+  document.querySelectorAll('.ncb').forEach(c=>{c.checked=(c.dataset.proto==='Snell')})
 }
 
 function saveSubSelection(){
@@ -497,8 +624,6 @@ function copy(t){
 // ── 初始化 ──
 function initApp(){
   try{subs=JSON.parse($('rawSubs').value)}catch(e){subs=[]}
-  const savedSort = localStorage.getItem('pine-node-sort') || 'default';
-  if($('nodeSort')) $('nodeSort').value = savedSort;
   renderNodeList();
   renderSubs();
 }
