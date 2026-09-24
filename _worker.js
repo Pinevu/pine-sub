@@ -26,97 +26,137 @@ function renderHTML(data) {
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <title>${SITE_TITLE}</title>
 <style>
-:root{--bg:#f2f2f7;--card:#fff;--text:#1d1d1f;--sub:#8e8e93;--blue:#007aff;--red:#ff3b30;--green:#34c759;--orange:#ff9500;--border:rgba(60,60,67,.12);--shadow:0 2px 12px rgba(0,0,0,.06);--radius:14px;--font:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--mono:ui-monospace,SFMono-Regular,monospace}
-.dark{--bg:#1c1c1e;--card:#2c2c2e;--text:#f5f5f7;--sub:#8e8e93;--border:rgba(255,255,255,.1);--shadow:0 2px 12px rgba(0,0,0,.3)}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0}
-body{font-family:var(--font);background:var(--bg);color:var(--text);padding:0;line-height:1.5;-webkit-font-smoothing:antialiased}
-.app{max-width:720px;margin:0 auto;padding:0 16px 60px}
+:root{
+  --bg:#f2f2f7;--card:#ffffff;--text:#1c1c1e;--text-sec:#636366;--sub:#8e8e93;
+  --blue:#007aff;--blue-soft:rgba(0,122,255,0.08);--blue-border:rgba(0,122,255,0.2);
+  --red:#ff3b30;--red-soft:rgba(255,59,48,0.08);
+  --green:#34c759;--green-soft:rgba(52,199,89,0.08);
+  --orange:#ff9500;--orange-soft:rgba(255,149,0,0.1);
+  --border:rgba(60,60,67,0.1);--card-border:rgba(60,60,67,0.06);--input-bg:#f2f2f7;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.03);--shadow:0 3px 12px rgba(0,0,0,0.04);
+  --radius:16px;--radius-sm:10px;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,monospace;
+}
+.dark{
+  --bg:#000000;--card:#1c1c1e;--text:#f5f5f7;--text-sec:#aeaeb2;--sub:#8e8e93;
+  --blue:#0a84ff;--blue-soft:rgba(10,132,255,0.15);--blue-border:rgba(10,132,255,0.3);
+  --red:#ff453a;--red-soft:rgba(255,69,58,0.15);
+  --green:#30d158;--green-soft:rgba(48,209,88,0.15);
+  --orange:#ff9f0a;--orange-soft:rgba(255,159,10,0.15);
+  --border:rgba(255,255,255,0.1);--card-border:rgba(255,255,255,0.08);--input-bg:#2c2c2e;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.2);--shadow:0 4px 18px rgba(0,0,0,0.35);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.45;-webkit-font-smoothing:antialiased}
+.app{max-width:680px;margin:0 auto;padding:0 14px 60px}
+
 /* 顶栏 */
-.nav{display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:rgba(242,242,247,.85);z-index:10;-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);margin:0 -16px 16px;padding:12px 16px}
-.dark .nav{background:rgba(28,28,30,.85)}
-.nav h1{font-size:22px;font-weight:700;letter-spacing:-.5px;background:linear-gradient(135deg,#007aff,#5856d6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;user-select:none}
+.nav{display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg);z-index:100;padding:12px 14px;margin:0 -14px 10px;border-bottom:1px solid var(--border);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px)}
+.nav h1{font-size:20px;font-weight:700;letter-spacing:-0.4px;color:var(--text);display:flex;align-items:center;gap:6px;user-select:none}
 .nav-actions{display:flex;gap:8px;align-items:center}
-.nav-actions button,.nav-actions a{background:var(--card);border:1px solid var(--border);color:var(--text);padding:5px 12px;border-radius:18px;font-size:13px;font-weight:500;cursor:pointer;text-decoration:none;transition:all .2s;box-shadow:none}
-.nav-actions button:active,.nav-actions a:active{transform:scale(.95);opacity:.8}
-/* 标签导航 */
-.tabs{display:flex;gap:3px;background:var(--card);border-radius:11px;padding:3px;margin-bottom:16px;border:1px solid var(--border)}
-.tab{flex:1;text-align:center;padding:7px 0;border-radius:9px;font-size:13px;font-weight:500;color:var(--sub);cursor:pointer;transition:all .25s;border:none;background:transparent;user-select:none}
-.tab.active{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(0,122,255,.35)}
-.tab:not(.active):active{opacity:.7}
+.nav-actions button,.nav-actions a{background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;text-decoration:none;transition:all .18s;box-shadow:var(--shadow-sm)}
+.nav-actions button:active,.nav-actions a:active{transform:scale(.96);opacity:.8}
+
+/* 标签分段器 */
+.tabs{display:flex;gap:3px;background:rgba(118,118,128,0.12);border-radius:12px;padding:3px;margin-bottom:14px}
+.tab{flex:1;text-align:center;padding:7px 0;border-radius:9px;font-size:13px;font-weight:600;color:var(--sub);cursor:pointer;transition:all .2s;border:none;background:transparent;user-select:none}
+.tab.active{background:var(--card);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.tab:not(.active):active{opacity:.6}
 .tab-content{display:none}
 .tab-content.active{display:block;animation:fadeIn .2s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-/* 卡片 */
-.card{background:var(--card);border-radius:var(--radius);padding:20px;margin-bottom:14px;border:1px solid var(--border)}
-.card-title{font-size:16px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}
-.hint{font-size:13px;color:var(--sub);margin-bottom:14px;line-height:1.4}
-input,textarea,.input-like{width:100%;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-size:14px;font-family:var(--mono);outline:none;transition:border-color .2s,box-shadow .2s;color:var(--text)}
-input:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,122,255,.15)}
-textarea{resize:vertical;min-height:76px}
-.btn{padding:10px 18px;border-radius:10px;font-size:14px;font-weight:500;border:none;cursor:pointer;color:#fff;background:var(--blue);transition:all .2s;display:inline-flex;align-items:center;justify-content:center;gap:6px}
-.btn:active{transform:scale(.96)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+
+/* 卡片基类 */
+.card{background:var(--card);border-radius:var(--radius);padding:18px 16px;margin-bottom:12px;border:1px solid var(--card-border);box-shadow:var(--shadow)}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.card-title-group{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.card-main-title{font-size:17px;font-weight:700;letter-spacing:-0.3px;color:var(--text);white-space:nowrap}
+.card-head-actions{display:flex;gap:6px;align-items:center}
+.card-subtitle{font-size:12px;color:var(--sub);margin-bottom:12px;line-height:1.4}
+
+/* 输入与通用按钮 */
+input,textarea{width:100%;padding:11px 14px;background:var(--input-bg);border:1px solid transparent;border-radius:var(--radius-sm);font-size:14px;font-family:var(--font);color:var(--text);outline:none;transition:border-color .2s,background .2s}
+input:focus,textarea:focus{border-color:var(--blue);background:var(--card)}
+textarea{font-family:var(--mono);font-size:13px;line-height:1.45;resize:vertical;min-height:76px}
+.btn{padding:9px 16px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;border:none;cursor:pointer;color:#fff;background:var(--blue);transition:all .18s;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn:active{transform:scale(.97)}
 .btn-block{width:100%}
-.btn-sm{padding:6px 12px;font-size:12px;border-radius:8px}
+.btn-sm{padding:5px 12px;font-size:12px;border-radius:8px}
+.btn-pill{padding:5px 12px;font-size:12px;font-weight:600;border-radius:20px;background:var(--input-bg);color:var(--text);border:1px solid var(--border);cursor:pointer}
+.btn-pill:active{transform:scale(.95);opacity:.8}
+.btn-pill-orange{background:var(--orange-soft);color:var(--orange);border-color:rgba(255,149,0,0.25)}
 .btn-green{background:var(--green)}
 .btn-red{background:var(--red)}
 .btn-orange{background:var(--orange)}
-.btn-gray{background:var(--bg);color:var(--text);border:1px solid var(--border)}
-.btn-ghost{background:transparent;color:var(--blue);padding:4px 8px;font-size:13px}
+.btn-gray{background:var(--input-bg);color:var(--text);border:1px solid var(--border)}
+.btn-ghost{background:transparent;color:var(--blue);padding:6px 8px;font-size:13px;font-weight:600}
+
 /* 徽章 */
-.badge{font-size:11px;padding:2px 8px;border-radius:5px;font-weight:600;display:inline-block}
-.badge-orange{color:var(--orange);background:rgba(255,149,0,.12)}
-.badge-green{color:var(--green);background:rgba(52,199,89,.12)}
-.badge-red{color:var(--red);background:rgba(255,59,48,.12)}
-.badge-blue{color:var(--blue);background:rgba(0,122,255,.12)}
+.badge{font-size:11px;padding:3px 7px;border-radius:6px;font-weight:600;display:inline-flex;align-items:center;line-height:1;white-space:nowrap}
+.badge-blue{background:var(--blue-soft);color:var(--blue)}
+.badge-orange{background:var(--orange-soft);color:var(--orange)}
+.badge-green{background:var(--green-soft);color:var(--green)}
+.badge-gray{background:rgba(142,142,147,0.12);color:var(--sub)}
+
 /* 节点列表 */
-#nodeList{display:none;margin-top:12px;animation:fadeIn .2s ease}
-.node-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;margin-bottom:6px;background:var(--bg);transition:all .2s}
-.node-item:active{transform:scale(.99)}
-.node-item .info{flex:1;min-width:0}
-.node-item .name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.node-item .meta{display:flex;gap:6px;margin-top:2px}
-.node-item .actions{display:flex;gap:6px;flex-shrink:0}
-/* 延迟指示器 */
-.latency{font-size:11px;padding:2px 6px;border-radius:4px;font-weight:600}
-.lat-0{background:rgba(128,128,128,.1);color:var(--sub)}
-.lat-1{background:rgba(52,199,89,.15);color:var(--green)}
-.lat-2{background:rgba(255,149,0,.15);color:var(--orange)}
-.lat-3{background:rgba(255,59,48,.15);color:var(--red)}
+#nodeList{display:none;margin-top:10px;animation:fadeIn .2s ease}
+.node-card-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--border);border-radius:12px;margin-bottom:8px;background:var(--card);gap:10px;transition:all .15s}
+.node-card-item:last-child{margin-bottom:0}
+.node-card-item:active{transform:scale(.995)}
+.node-idx-pill{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--sub);min-width:26px;text-align:center;padding:2px 4px;background:var(--input-bg);border-radius:6px;flex-shrink:0}
+.node-info-box{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.node-full-title{font-size:14px;font-weight:600;color:var(--text);word-break:break-all;line-height:1.35}
+.node-meta-row{display:flex;align-items:center;gap:6px;font-size:12px}
+.node-addr-tag{font-family:var(--mono);color:var(--sub);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.node-actions-box{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.icon-action-btn{padding:6px 8px;font-size:11px;font-weight:600;border-radius:8px;background:var(--input-bg);color:var(--text-sec);border:1px solid var(--border);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;line-height:1;transition:all .15s}
+.icon-action-btn:active{transform:scale(.92)}
+.btn-action-del{color:var(--red);background:var(--red-soft);border-color:rgba(255,59,48,0.15)}
+
 /* 订阅卡片 */
-.sub-card{border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;background:var(--card);transition:all .2s}
-.sub-card:active{transform:scale(.995)}
-.sub-card .name-input{background:transparent;border:none;font-size:17px;font-weight:600;padding:0;font-family:var(--font);color:var(--text);width:100%;word-break:break-all;cursor:text}
-.sub-card .name-input:focus{box-shadow:none;border-bottom:2px solid var(--blue);border-radius:0;outline:none}
+.sub-card{border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;background:var(--card)}
+.sub-card .name-input{background:transparent;border:none;font-size:17px;font-weight:700;padding:0;font-family:var(--font);color:var(--text);width:100%;cursor:text}
+.sub-card .name-input:focus{border-bottom:2px solid var(--blue);border-radius:0;outline:none}
 .sub-meta{display:flex;align-items:center;gap:8px;margin:6px 0 12px;font-size:12px;color:var(--sub)}
-.link-list{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
-.link-row{display:flex;align-items:center;background:rgba(0,122,255,.04);padding:6px 10px;border-radius:8px;gap:8px}
-.link-label{font-size:11px;font-weight:600;color:var(--blue);width:48px;flex-shrink:0}
-.link-url{font-family:var(--mono);font-size:11px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;cursor:pointer}
+.link-list{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+.link-row{display:flex;align-items:center;background:var(--input-bg);padding:7px 10px;border-radius:10px;gap:8px;border:1px solid var(--border)}
+.link-label{font-size:11px;font-weight:700;color:var(--blue);width:50px;flex-shrink:0}
+.link-url{font-family:var(--mono);font-size:11px;color:var(--text-sec);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;cursor:pointer}
 .link-url:active{opacity:.6}
 .sub-collapse{display:none;margin-top:10px;border-top:1px dashed var(--border);padding-top:12px;animation:fadeIn .2s ease}
 .sub-collapse.open{display:block}
-.sub-tools{display:flex;gap:8px;margin-top:10px}
-.sub-tools .btn{flex:1}
+.sub-tools{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px}
+.sub-tools .btn{width:100%;font-size:12px;padding:8px 0;font-weight:600}
+
 /* 模态框 */
-.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px;opacity:0;transition:opacity .25s}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;z-index:1000;padding:16px;opacity:0;transition:opacity .2s ease}
 .modal-overlay.show{display:flex;opacity:1}
-.modal-card{background:var(--card);border-radius:16px;padding:24px;width:100%;max-width:420px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,.25);transform:scale(.92);transition:transform .25s ease}
-.modal-overlay.show .modal-card{transform:scale(1)}
-.modal-title{font-size:17px;font-weight:600;margin-bottom:16px;text-align:center}
-.modal-body{overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
-.modal-actions{display:flex;gap:10px;margin-top:16px}
-.modal-actions .btn{flex:1;justify-content:center}
+.modal-card{background:var(--card);border-radius:20px;padding:20px 18px;width:100%;max-width:440px;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25);border:1px solid var(--border)}
+.modal-title{font-size:17px;font-weight:700;margin-bottom:6px;text-align:center;color:var(--text)}
+.modal-body{overflow-y:auto;flex:1;padding-right:2px;-webkit-overflow-scrolling:touch}
+.modal-actions{display:flex;gap:10px;margin-top:14px}
+.modal-actions .btn{flex:1}
+
+/* 顺序调整项 */
+.order-item-card{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:12px;margin-bottom:6px;gap:8px}
+.order-idx{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--sub);width:24px;text-align:center;flex-shrink:0}
+.order-name{font-size:13px;font-weight:600;color:var(--text);flex:1;min-width:0;word-break:break-all;line-height:1.35}
+.order-btns{display:flex;gap:4px;flex-shrink:0}
+
+/* 授权勾选项 */
+.auth-check-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:12px;margin-bottom:6px;cursor:pointer;transition:all .15s}
+.auth-check-item:active{background:rgba(0,122,255,0.08);border-color:var(--blue-border)}
+.auth-check-item input[type=checkbox]{width:18px;height:18px;margin:0;flex-shrink:0;accent-color:var(--blue)}
+.auth-name{font-size:14px;font-weight:600;color:var(--text);flex:1;min-width:0;word-break:break-all;line-height:1.35}
+
 /* toast */
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--card);color:var(--text);padding:10px 22px;border-radius:12px;font-size:13px;font-weight:500;box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:9999;opacity:0;pointer-events:none;border:1px solid var(--border);transition:all .35s ease;white-space:nowrap}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--card);color:var(--text);padding:10px 22px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:9999;opacity:0;pointer-events:none;border:1px solid var(--border);transition:all .3s ease;white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
 /* 空态 */
 .empty{text-align:center;color:var(--sub);padding:24px 0;font-size:13px}
-/* 节点选择弹窗项 */
-.modal-body label{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg);border-radius:10px;cursor:pointer;transition:background .15s;border:1px solid transparent}
-.modal-body label:active{background:var(--border)}
-.modal-body label input[type=checkbox]{width:18px;height:18px;margin:0;flex-shrink:0;accent-color:var(--blue)}
-.modal-body label span:first-of-type{font-size:14px;font-weight:500;word-break:break-all;flex:1;min-width:0;line-height:1.3}
-@media(min-width:640px){.app{padding:0 24px 60px}.nav{padding:16px 24px;margin:0 -24px 24px}}
+@media(min-width:640px){.app{padding:0 24px 60px}.nav{padding:14px 24px;margin:0 -24px 14px}}
 </style>
 </head>
 <body>
@@ -153,18 +193,21 @@ textarea{resize:vertical;min-height:76px}
       </div>
     </div>
     <div class="card">
-      <div class="card-title">
-        <span>🗂️ 节点库</span>
-        <div style="display:flex;gap:6px;align-items:center">
-          <span class="badge badge-blue" id="nodeCount">${nodeLines.length} 个</span>
-          <span class="badge badge-orange" id="nodeProtoCount" style="font-size:10px"></span>
-          <button class="btn btn-sm btn-orange" onclick="openOrderModal()">↕️ 调整顺序</button>
-          <button class="btn btn-sm btn-gray" onclick="toggleNodeList()" id="toggleNodesBtn">展开</button>
+      <div class="card-head">
+        <div class="card-title-group">
+          <span class="card-main-title">🗂️ 节点库</span>
+          <span class="badge badge-blue" id="nodeCount">${nodeLines.length}</span>
+        </div>
+        <div class="card-head-actions">
+          <button class="btn btn-sm btn-pill btn-pill-orange" onclick="openOrderModal()">↕️ 调序</button>
+          <button class="btn btn-sm btn-pill" onclick="toggleNodeList()" id="toggleNodesBtn">展开</button>
         </div>
       </div>
-      <div class="hint">节点的排列顺序将直接决定 Surge / Clash 等订阅中节点的实际更新顺序</div>
-      <div style="margin-bottom:10px">
-        <input id="nodeFilter" placeholder="🔍 快速搜索节点..." style="margin:0;font-family:var(--font)" oninput="renderNodeList()">
+      <div class="card-subtitle">
+        <span id="nodeProtoCount" style="font-weight:600;color:var(--text)"></span> · 顺序直接决定 Surge / Clash 等订阅更新次序
+      </div>
+      <div style="margin-bottom:8px">
+        <input id="nodeFilter" placeholder="🔍 搜索节点名称或地址..." oninput="renderNodeList()">
       </div>
       <div id="nodeList"></div>
     </div>
@@ -337,6 +380,14 @@ function getProto(line){
   return r.toUpperCase()
 }
 
+function getNodeAddr(line){
+  const eq = line.indexOf('=');
+  if (eq < 0) return '';
+  const p = line.substring(eq + 1).trim().split(',').map(s=>s.trim());
+  if (p.length >= 3) return p[1] + ':' + p[2];
+  return '';
+}
+
 // ── 节点列表 ──
 function toggleNodeList(){
   const el=$('nodeList'),btn=$('toggleNodesBtn')
@@ -348,23 +399,32 @@ function renderNodeList(){
   const el=$('nodeList'),raw=$('rawNodes')
   const lines=raw.value.split('\\n').filter(l=>l.trim()&&!l.trim().startsWith('#'))
   const q=($('nodeFilter').value||'').trim().toLowerCase()
-  let filtered=q?lines.filter(l=>l.split('=')[0].trim().toLowerCase().includes(q)):lines.slice()
-  $('nodeCount').textContent=filtered.length+'/'+lines.length+' 个'
+  let filtered=q?lines.filter(l=>l.toLowerCase().includes(q)):lines.slice()
+  if($('nodeCount')) $('nodeCount').textContent=lines.length
   const ss=lines.filter(l=>{const p=l.split('=')[1];return p&&(p.trim().toLowerCase().startsWith('ss,')||p.trim().toLowerCase().startsWith('shadowsocks,'))}).length
   const sn=lines.length-ss
-  $('nodeProtoCount').textContent=sn+'Snell '+ss+'SS'
+  if($('nodeProtoCount')) $('nodeProtoCount').textContent=sn+' Snell · '+ss+' SS'
   if(!filtered.length){el.innerHTML=lines.length?'<div class="empty">无匹配节点</div>':'<div class="empty">暂无节点</div>';return}
-  el.innerHTML=filtered.map((l,filteredIdx)=>{
+  el.innerHTML=filtered.map((l)=>{
     const realIdx=lines.indexOf(l);
-    const name=l.split('=')[0].trim(),proto=getProto(l);
-    return \`<div class="node-item">
-      <span style="font-size:12px;color:var(--sub);font-weight:600;min-width:24px">#\${realIdx+1}</span>
-      <div class="info"><div class="name" style="word-break:break-all">\${name}</div><div class="meta"><span class="badge badge-orange" style="flex-shrink:0">\${proto}</span><span class="latency lat-0" id="lat-\${realIdx}">-- ms</span></div></div>
-      <div class="actions">
-        <button class="btn btn-sm btn-gray" style="padding:5px 8px;font-size:12px" title="上移" onclick="moveNodeDirect(\${realIdx}, -1)">⬆️</button>
-        <button class="btn btn-sm btn-gray" style="padding:5px 8px;font-size:12px" title="下移" onclick="moveNodeDirect(\${realIdx}, 1)">⬇️</button>
-        <button class="btn btn-sm btn-gray" onclick="editNode(\${realIdx})">编辑</button>
-        <button class="btn btn-sm btn-red" onclick="deleteNode(\${realIdx})">删除</button>
+    const name=l.split('=')[0].trim(),proto=getProto(l),addr=getNodeAddr(l);
+    const badgeCls=proto==='SS'?'badge-blue':'badge-orange';
+    return \`<div class="node-card-item">
+      <span class="node-idx-pill">#\${realIdx+1}</span>
+      <div class="node-info-box">
+        <div class="node-title-row">
+          <span class="node-full-title">\${name}</span>
+        </div>
+        <div class="node-meta-row">
+          <span class="badge \${badgeCls}">\${proto}</span>
+          \${addr?\`<span class="node-addr-tag">\${addr}</span>\`:''}
+        </div>
+      </div>
+      <div class="node-actions-box">
+        <button class="icon-action-btn" title="上移" onclick="moveNodeDirect(\${realIdx}, -1)">▲</button>
+        <button class="icon-action-btn" title="下移" onclick="moveNodeDirect(\${realIdx}, 1)">▼</button>
+        <button class="icon-action-btn" onclick="editNode(\${realIdx})">编辑</button>
+        <button class="icon-action-btn btn-action-del" onclick="deleteNode(\${realIdx})">删除</button>
       </div>
     </div>\`
   }).join('')
@@ -401,14 +461,15 @@ function renderOrderModalList(){
   orderLines.forEach((l,i)=>{
     const name=l.split('=')[0].trim();
     const p=getProto(l);
-    html+='<div class="modal-item" style="padding:8px 10px;gap:6px">'
-      +'<span style="font-size:12px;color:var(--sub);font-weight:600;min-width:26px">#'+(i+1)+'</span>'
-      +'<span class="mi-name">'+name+'</span>'
-      +'<span class="badge badge-orange mi-badge">'+p+'</span>'
-      +'<div style="display:flex;gap:4px;flex-shrink:0;margin-left:4px">'
-      +'<button class="btn btn-sm btn-gray" style="padding:4px 6px;font-size:11px" title="置顶" onclick="moveOrderTop('+i+')">🔝</button>'
-      +'<button class="btn btn-sm btn-gray" style="padding:4px 6px;font-size:11px" title="上移" onclick="moveOrderItem('+i+', -1)">⬆️</button>'
-      +'<button class="btn btn-sm btn-gray" style="padding:4px 6px;font-size:11px" title="下移" onclick="moveOrderItem('+i+', 1)">⬇️</button>'
+    const badgeCls=p==='SS'?'badge-blue':'badge-orange';
+    html+='<div class="order-item-card">'
+      +'<span class="order-idx">#'+(i+1)+'</span>'
+      +'<span class="order-name">'+name+'</span>'
+      +'<span class="badge '+badgeCls+'" style="flex-shrink:0">'+p+'</span>'
+      +'<div class="order-btns">'
+      +'<button class="icon-action-btn" title="置顶" onclick="moveOrderTop('+i+')">🔝</button>'
+      +'<button class="icon-action-btn" title="上移" onclick="moveOrderItem('+i+', -1)">▲</button>'
+      +'<button class="icon-action-btn" title="下移" onclick="moveOrderItem('+i+', 1)">▼</button>'
       +'</div>'
       +'</div>';
   });
@@ -554,24 +615,25 @@ function deleteSub(id){if(!confirm('废除后链接将失效'))return;subs=subs.
 function refreshToken(id){if(!confirm('重置凭证？'))return;const s=subs.find(x=>x.id===id);if(s){const c='abcdefghijklmnopqrstuvwxyz0123456789';let r='';for(let i=0;i<16;i++)r+=c[Math.random()*c.length|0];s.token=r;renderSubs();syncSubs();toast('已重置')}}
 
 function triggerSelect(id){
-  editingSubId=id;const sub=subs.find(s=>s.id===id),raw=$('rawNodes')
-  let lines=raw.value.split('\\n').filter(l=>l.trim()&&!l.trim().startsWith('#'))
+  editingSubId=id;const sub=subs.find(s=>s.id===id),raw=$('rawNodes');
+  let lines=raw.value.split('\\n').filter(l=>l.trim()&&!l.trim().startsWith('#'));
   if(!lines.length){toast('节点库为空');return}
   let html='<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">'
     +'<button class="btn btn-sm btn-gray" onclick="modalCheckAll(true)">全选</button>'
     +'<button class="btn btn-sm btn-gray" onclick="modalCheckAll(false)">清空</button>'
     +'<button class="btn btn-sm btn-gray" onclick="modalCheckSS()">仅选SS</button>'
     +'<button class="btn btn-sm btn-gray" onclick="modalCheckSnell()">仅选Snell</button>'
-    +'</div><div style="display:flex;flex-direction:column;gap:6px">'
+    +'</div><div style="display:flex;flex-direction:column;gap:6px">';
   lines.forEach((l,i)=>{
-    const n=l.split('=')[0].trim(),p=getProto(l),ck=sub.type==='all'||(sub.selected||[]).includes(n)
-    html+='<label class="modal-item" style="padding:9px 12px;gap:8px">'
-      +'<span style="font-size:12px;color:var(--sub);font-weight:600;min-width:24px">#'+(i+1)+'</span>'
+    const n=l.split('=')[0].trim(),p=getProto(l),ck=sub.type==='all'||(sub.selected||[]).includes(n);
+    const badgeCls=p==='SS'?'badge-blue':'badge-orange';
+    html+='<label class="auth-check-item">'
+      +'<span class="order-idx">#'+(i+1)+'</span>'
       +'<input type="checkbox" class="ncb" data-proto="'+p+'" value="'+n.replace(/"/g,'&quot;')+'" '+(ck?'checked':'')+'>'
-      +'<span class="mi-name">'+n+'</span>'
-      +'<span class="badge badge-orange mi-badge">'+p+'</span></label>'
-  })
-  html+='</div>';$('subSelectBody').innerHTML=html;openModal('subSelectModal')
+      +'<span class="auth-name">'+n+'</span>'
+      +'<span class="badge '+badgeCls+'" style="flex-shrink:0">'+p+'</span></label>';
+  });
+  html+='</div>';$('subSelectBody').innerHTML=html;openModal('subSelectModal');
 }
 
 function modalCheckAll(checked){
