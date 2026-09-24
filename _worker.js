@@ -162,7 +162,14 @@ textarea{resize:vertical;min-height:76px}
         </div>
       </div>
       <div class="hint">勾选节点可分配至订阅通道</div>
-      <input id="nodeFilter" placeholder="🔍 搜索节点名称..." style="margin-bottom:10px;font-family:var(--font)" oninput="renderNodeList()">
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <input id="nodeFilter" placeholder="🔍 搜索节点名称..." style="margin:0;font-family:var(--font)" oninput="renderNodeList()">
+        <select id="nodeSort" style="width:128px;padding:10px 8px;font-family:var(--font);background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:10px" onchange="localStorage.setItem('pine-node-sort',this.value);renderNodeList()">
+          <option value="default">默认顺序</option>
+          <option value="name">名称排序</option>
+          <option value="protocol">协议分组</option>
+        </select>
+      </div>
       <div id="nodeList"></div>
     </div>
   </div>
@@ -326,7 +333,10 @@ function renderNodeList(){
   const lines=raw.value.split('\\n').filter(l=>l.trim()&&!l.trim().startsWith('#'))
   // 搜索过滤
   const q=($('nodeFilter').value||'').trim().toLowerCase()
-  const filtered=q?lines.filter(l=>l.split('=')[0].trim().toLowerCase().includes(q)):lines
+  let filtered=q?lines.filter(l=>l.split('=')[0].trim().toLowerCase().includes(q)):lines.slice()
+  const sort=($('nodeSort')&&$('nodeSort').value)||'default'
+  if(sort==='name') filtered.sort((a,b)=>a.split('=')[0].trim().localeCompare(b.split('=')[0].trim(),'zh-CN'))
+  if(sort==='protocol') filtered.sort((a,b)=>getProto(a).localeCompare(getProto(b))||a.split('=')[0].localeCompare(b.split('=')[0],'zh-CN'))
   $('nodeCount').textContent=filtered.length+'/'+lines.length+' 个'
   // 协议统计
   const ss=lines.filter(l=>{const p=l.split('=')[1];return p&&(p.trim().toLowerCase().startsWith('ss,')||p.trim().toLowerCase().startsWith('shadowsocks,'))}).length
@@ -430,9 +440,12 @@ function refreshToken(id){if(!confirm('重置凭证？'))return;const s=subs.fin
 
 function triggerSelect(id){
   editingSubId=id;const sub=subs.find(s=>s.id===id),raw=$('rawNodes')
-  const lines=raw.value.split('\\n').filter(l=>l.trim()&&!l.trim().startsWith('#'))
+  let lines=raw.value.split('\\n').filter(l=>l.trim()&&!l.trim().startsWith('#'))
   if(!lines.length){toast('节点库为空');return}
-  let html='<div style="margin-bottom:10px;display:flex;gap:8px"><button class="btn btn-sm btn-gray" onclick="document.querySelectorAll(\\'.ncb\\').forEach(c=>c.checked=true)">全选</button><button class="btn btn-sm btn-gray" onclick="document.querySelectorAll(\\'.ncb\\').forEach(c=>c.checked=false)">清空</button></div><div style="display:flex;flex-direction:column;gap:8px">'
+  const sort=localStorage.getItem('pine-node-sort')||'default'
+  if(sort==='name') lines.sort((a,b)=>a.split('=')[0].trim().localeCompare(b.split('=')[0].trim(),'zh-CN'))
+  if(sort==='protocol') lines.sort((a,b)=>getProto(a).localeCompare(getProto(b))||a.split('=')[0].localeCompare(b.split('=')[0],'zh-CN'))
+  let html='<div style="display:flex;gap:8px;margin-bottom:8px"><select id="modalNodeSort" onchange="localStorage.setItem(\'pine-node-sort\',this.value);triggerSelect(editingSubId)" style="flex:1;padding:8px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px"><option value="default" '+(sort==='default'?'selected':'')+'>默认顺序</option><option value="name" '+(sort==='name'?'selected':'')+'>名称排序</option><option value="protocol" '+(sort==='protocol'?'selected':'')+'>协议分组</option></select><button class="btn btn-sm btn-gray" onclick="modalCheckAll(true)">全选</button><button class="btn btn-sm btn-gray" onclick="modalCheckAll(false)">清空</button></div><div style="display:flex;flex-direction:column;gap:8px">'
   lines.forEach(l=>{
     const n=l.split('=')[0].trim(),p=getProto(l),ck=sub.type==='all'||(sub.selected||[]).includes(n)
     html+='<label style="display:flex;align-items:center;gap:8px;padding:10px;background:var(--bg);border-radius:8px;cursor:pointer">'
