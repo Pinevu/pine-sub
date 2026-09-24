@@ -164,7 +164,7 @@ textarea{resize:vertical;min-height:76px}
       <div class="hint">勾选节点可分配至订阅通道</div>
       <div style="display:flex;gap:8px;margin-bottom:10px">
         <input id="nodeFilter" placeholder="🔍 搜索节点名称..." style="margin:0;font-family:var(--font)" oninput="renderNodeList()">
-        <select id="nodeSort" style="width:128px;padding:10px 8px;font-family:var(--font);background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:10px" onchange="localStorage.setItem('pine-node-sort',this.value);renderNodeList()">
+        <select id="nodeSort" style="width:128px;padding:10px 8px;font-family:var(--font);background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:10px" onchange="changeNodeSort(this.value)">
           <option value="default">默认顺序</option>
           <option value="name">名称排序</option>
           <option value="protocol">协议分组</option>
@@ -438,6 +438,9 @@ function addNewSub(){
 function deleteSub(id){if(!confirm('废除后链接将失效'))return;subs=subs.filter(s=>s.id!==id);renderSubs();syncSubs()}
 function refreshToken(id){if(!confirm('重置凭证？'))return;const s=subs.find(x=>x.id===id);if(s){const c='abcdefghijklmnopqrstuvwxyz0123456789';let r='';for(let i=0;i<16;i++)r+=c[Math.random()*c.length|0];s.token=r;renderSubs();syncSubs();toast('已重置')}}
 
+function changeNodeSort(val){localStorage.setItem('pine-node-sort',val);renderNodeList()}
+function changeModalSort(val){localStorage.setItem('pine-node-sort',val);triggerSelect(editingSubId)}
+
 function triggerSelect(id){
   editingSubId=id;const sub=subs.find(s=>s.id===id),raw=$('rawNodes')
   let lines=raw.value.split('\\n').filter(l=>l.trim()&&!l.trim().startsWith('#'))
@@ -445,7 +448,7 @@ function triggerSelect(id){
   const sort=localStorage.getItem('pine-node-sort')||'default'
   if(sort==='name') lines.sort((a,b)=>a.split('=')[0].trim().localeCompare(b.split('=')[0].trim(),'zh-CN'))
   if(sort==='protocol') lines.sort((a,b)=>getProto(a).localeCompare(getProto(b))||a.split('=')[0].localeCompare(b.split('=')[0],'zh-CN'))
-  let html='<div style="display:flex;gap:8px;margin-bottom:8px"><select id="modalNodeSort" onchange="localStorage.setItem(\'pine-node-sort\',this.value);triggerSelect(editingSubId)" style="flex:1;padding:8px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px"><option value="default" '+(sort==='default'?'selected':'')+'>默认顺序</option><option value="name" '+(sort==='name'?'selected':'')+'>名称排序</option><option value="protocol" '+(sort==='protocol'?'selected':'')+'>协议分组</option></select><button class="btn btn-sm btn-gray" onclick="modalCheckAll(true)">全选</button><button class="btn btn-sm btn-gray" onclick="modalCheckAll(false)">清空</button></div><div style="display:flex;flex-direction:column;gap:8px">'
+  let html='<div style="display:flex;gap:8px;margin-bottom:8px"><select id="modalNodeSort" onchange="changeModalSort(this.value)" style="flex:1;padding:8px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px"><option value="default" '+(sort==='default'?'selected':'')+'>默认顺序</option><option value="name" '+(sort==='name'?'selected':'')+'>名称排序</option><option value="protocol" '+(sort==='protocol'?'selected':'')+'>协议分组</option></select><button class="btn btn-sm btn-gray" onclick="modalCheckAll(true)">全选</button><button class="btn btn-sm btn-gray" onclick="modalCheckAll(false)">清空</button></div><div style="display:flex;flex-direction:column;gap:8px">'
   lines.forEach(l=>{
     const n=l.split('=')[0].trim(),p=getProto(l),ck=sub.type==='all'||(sub.selected||[]).includes(n)
     html+='<label style="display:flex;align-items:center;gap:8px;padding:10px;background:var(--bg);border-radius:8px;cursor:pointer">'
@@ -492,10 +495,18 @@ function copy(t){
 }
 
 // ── 初始化 ──
-window.addEventListener('DOMContentLoaded',()=>{
+function initApp(){
   try{subs=JSON.parse($('rawSubs').value)}catch(e){subs=[]}
-  renderNodeList();renderSubs()
-});
+  const savedSort = localStorage.getItem('pine-node-sort') || 'default';
+  if($('nodeSort')) $('nodeSort').value = savedSort;
+  renderNodeList();
+  renderSubs();
+}
+if(document.readyState==='loading'){
+  window.addEventListener('DOMContentLoaded',initApp);
+}else{
+  initApp();
+}
 <\x2Fscript>
 </body>
 </html>`;
