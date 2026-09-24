@@ -64,8 +64,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
 .tab.active{background:var(--card);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,0.06)}
 .tab:not(.active):active{opacity:.6}
 .tab-content{display:none}
-.tab-content.active{display:block;animation:fadeIn .2s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+.tab-content.active{display:block}
 
 /* 卡片基类 */
 .card{background:var(--card);border-radius:var(--radius);padding:18px 16px;margin-bottom:12px;border:1px solid var(--card-border);box-shadow:var(--shadow)}
@@ -100,7 +99,7 @@ textarea{font-family:var(--mono);font-size:13px;line-height:1.45;resize:vertical
 .badge-gray{background:rgba(142,142,147,0.12);color:var(--sub)}
 
 /* 节点列表 */
-#nodeList{display:none;margin-top:10px;animation:fadeIn .2s ease}
+#nodeList{display:none;margin-top:10px}
 .node-card-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--border);border-radius:12px;margin-bottom:8px;background:var(--card);gap:10px;transition:all .15s}
 .node-card-item:last-child{margin-bottom:0}
 .node-card-item:active{transform:scale(.995)}
@@ -124,7 +123,7 @@ textarea{font-family:var(--mono);font-size:13px;line-height:1.45;resize:vertical
 .link-label{font-size:11px;font-weight:700;color:var(--blue);width:50px;flex-shrink:0}
 .link-url{font-family:var(--mono);font-size:11px;color:var(--text-sec);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;cursor:pointer}
 .link-url:active{opacity:.6}
-.sub-collapse{display:none;margin-top:10px;border-top:1px dashed var(--border);padding-top:12px;animation:fadeIn .2s ease}
+.sub-collapse{display:none;margin-top:10px;border-top:1px dashed var(--border);padding-top:12px}
 .sub-collapse.open{display:block}
 .sub-tools{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px}
 .sub-tools .btn{width:100%;font-size:12px;padding:8px 0;font-weight:600}
